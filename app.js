@@ -876,29 +876,14 @@ function openIdentityModal(playerId) {
   const player = players.find((p) => String(p.id) === String(playerId));
   if (!player) return;
   currentIdentityPlayerId = playerId;
-  pendingPlayerPhotoBlob = null;
+  playerAvatarController.initAvatar(player, "identityAvatarPreview", "identityAvatarPlaceholder", "identityAvatarInput");
   const modal = document.getElementById("identityModal");
   const title = document.getElementById("identityModalTitle");
   const nameInput = document.getElementById("identityName");
   const nicknameInput = document.getElementById("identityNickname");
-  const avatarInput = document.getElementById("identityAvatarInput");
-  const avatarPreview = document.getElementById("identityAvatarPreview");
-  const avatarPlaceholder = document.getElementById("identityAvatarPlaceholder");
   if (title) title.textContent = `Editar ${player.name}`;
   if (nameInput) nameInput.value = player.name || "";
   if (nicknameInput) nicknameInput.value = player.nickname || "";
-  if (avatarInput) avatarInput.value = "";
-  if (avatarPreview && avatarPlaceholder) {
-    if (player.photo_url) {
-      avatarPreview.src = player.photo_url;
-      avatarPreview.style.display = "";
-      avatarPlaceholder.style.display = "none";
-    } else {
-      avatarPreview.src = "";
-      avatarPreview.style.display = "none";
-      avatarPlaceholder.style.display = "";
-    }
-  }
   modal?.classList.remove("hidden");
 }
 
@@ -917,9 +902,10 @@ async function saveIdentity() {
   if ((name + nickname).length > 14) { alert("Nombre y apodo juntos no pueden superar 14 caracteres"); return; }
   try {
     let newPhotoUrl = undefined;
-    if (pendingPlayerPhotoBlob) {
-      newPhotoUrl = await apiClient.uploadPlayerPhoto(currentIdentityPlayerId, pendingPlayerPhotoBlob);
-      pendingPlayerPhotoBlob = null;
+    const pendingBlob = playerAvatarController.getPendingBlob();
+    if (pendingBlob) {
+      newPhotoUrl = await apiClient.uploadPlayerPhoto(currentIdentityPlayerId, pendingBlob);
+      playerAvatarController.clearPendingBlob();
     }
     const updatePayload = {
       name,
@@ -2294,22 +2280,7 @@ async function editPlayer(id) {
   editNavIndex = editNavPlayers.findIndex(p => String(p.id) === String(id));
 
   currentEditingPlayerId = id;
-  pendingPlayerPhotoBlob = null;
-  const avatarPreview = document.getElementById("playerAvatarPreview");
-  const avatarPlaceholder = document.getElementById("playerAvatarPlaceholder");
-  const avatarInput = document.getElementById("playerAvatarInput");
-  if (avatarInput) avatarInput.value = "";
-  if (avatarPreview && avatarPlaceholder) {
-    if (playerForEdit.photo_url) {
-      avatarPreview.src = playerForEdit.photo_url;
-      avatarPreview.style.display = "";
-      avatarPlaceholder.style.display = "none";
-    } else {
-      avatarPreview.src = "";
-      avatarPreview.style.display = "none";
-      avatarPlaceholder.style.display = "";
-    }
-  }
+  playerAvatarController.initAvatar(playerForEdit, "playerAvatarPreview", "playerAvatarPlaceholder", "playerAvatarInput");
   document.getElementById("editPlayerName").value = playerForEdit.name;
   document.getElementById("editPlayerNickname").value = playerForEdit.nickname || "";
   const fallbackAttack = 0;
@@ -2568,9 +2539,10 @@ async function saveEditPlayer() {
 
       if (isIdentityAction) {
         let newPhotoUrl = player?.photo_url || undefined;
-        if (pendingPlayerPhotoBlob) {
-          newPhotoUrl = await apiClient.uploadPlayerPhoto(editPlayerId, pendingPlayerPhotoBlob);
-          pendingPlayerPhotoBlob = null;
+        const pendingBlob = playerAvatarController.getPendingBlob();
+        if (pendingBlob) {
+          newPhotoUrl = await apiClient.uploadPlayerPhoto(editPlayerId, pendingBlob);
+          playerAvatarController.clearPendingBlob();
         }
 
         if (shouldUpdateIdentity || newPhotoUrl !== (player?.photo_url || undefined)) {
@@ -3241,7 +3213,6 @@ function compressImage(file, maxPx, quality) {
 }
 
 let pendingLogoFile = null;
-let pendingPlayerPhotoBlob = null;
 
 function openEditGroupLogoModal() {
   closeTopbarMenu();
@@ -3686,20 +3657,6 @@ document.getElementById("adminLoginModal").addEventListener("click", (e) => {
 document.getElementById("closeEditBtn")?.addEventListener("click", closeEditModal);
 document.getElementById("updatePlayerBtn")?.addEventListener("click", saveEditPlayer);
 
-document.getElementById("playerAvatarWrapper")?.addEventListener("click", () => {
-  document.getElementById("playerAvatarInput")?.click();
-});
-document.getElementById("playerAvatarInput")?.addEventListener("change", async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const blob = await compressImage(file, 256, 0.82);
-  pendingPlayerPhotoBlob = blob;
-  const url = URL.createObjectURL(blob);
-  const avatarPreview = document.getElementById("playerAvatarPreview");
-  const avatarPlaceholder = document.getElementById("playerAvatarPlaceholder");
-  if (avatarPreview) { avatarPreview.src = url; avatarPreview.style.display = ""; }
-  if (avatarPlaceholder) avatarPlaceholder.style.display = "none";
-});
 
 document.getElementById("editPlayerAttack")?.addEventListener("input", updateSliderValues);
 document.getElementById("editPlayerDefense")?.addEventListener("input", updateSliderValues);
@@ -3868,20 +3825,10 @@ if (_ratingModalContent) {
 }
 document.getElementById("closeIdentityModalBtn")?.addEventListener("click", closeIdentityModal);
 document.getElementById("saveIdentityBtn")?.addEventListener("click", saveIdentity);
-document.getElementById("identityAvatarWrapper")?.addEventListener("click", () => {
-  document.getElementById("identityAvatarInput")?.click();
-});
-document.getElementById("identityAvatarInput")?.addEventListener("change", async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const blob = await compressImage(file, 256, 0.82);
-  pendingPlayerPhotoBlob = blob;
-  const url = URL.createObjectURL(blob);
-  const avatarPreview = document.getElementById("identityAvatarPreview");
-  const avatarPlaceholder = document.getElementById("identityAvatarPlaceholder");
-  if (avatarPreview) { avatarPreview.src = url; avatarPreview.style.display = ""; }
-  if (avatarPlaceholder) avatarPlaceholder.style.display = "none";
-});
+
+const playerAvatarController = createPlayerAvatarController({ compressImage });
+playerAvatarController.setupListeners("identityAvatarWrapper", "identityAvatarInput", "identityAvatarPreview", "identityAvatarPlaceholder");
+playerAvatarController.setupListeners("playerAvatarWrapper", "playerAvatarInput", "playerAvatarPreview", "playerAvatarPlaceholder");
 document.getElementById("ratingDetailsModal")?.addEventListener("click", (e) => {
   if (e.target.id === "ratingDetailsModal") {
     closeRatingDetailsModal();
