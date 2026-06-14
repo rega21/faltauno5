@@ -2,6 +2,17 @@
   function createPlayerAvatarController({ compressImage }) {
     let pendingBlob = null;
 
+    function showLightbox(src) {
+      const overlay = document.createElement("div");
+      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;";
+      const img = document.createElement("img");
+      img.src = src;
+      img.style.cssText = "max-width:90vw;max-height:90vh;border-radius:12px;object-fit:contain;";
+      overlay.appendChild(img);
+      overlay.addEventListener("click", () => overlay.remove());
+      document.body.appendChild(overlay);
+    }
+
     function initAvatar(player, previewId, placeholderId, inputId) {
       pendingBlob = null;
       const input = document.getElementById(inputId);
@@ -21,10 +32,22 @@
       }
     }
 
-    function setupListeners(wrapperId, inputId, previewId, placeholderId) {
-      document.getElementById(wrapperId)?.addEventListener("click", () => {
+    function setupListeners(wrapperId, inputId, previewId, placeholderId, cameraIconId) {
+      // Foto → lightbox
+      document.getElementById(previewId)?.addEventListener("click", () => {
+        const preview = document.getElementById(previewId);
+        if (preview?.src) showLightbox(preview.src);
+      });
+      // Placeholder → file picker
+      document.getElementById(placeholderId)?.addEventListener("click", () => {
         document.getElementById(inputId)?.click();
       });
+      // Ícono cámara → file picker (sin propagar al preview)
+      document.getElementById(cameraIconId)?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        document.getElementById(inputId)?.click();
+      });
+      // File input change → comprimir y mostrar preview
       document.getElementById(inputId)?.addEventListener("change", async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;

@@ -3827,8 +3827,8 @@ document.getElementById("closeIdentityModalBtn")?.addEventListener("click", clos
 document.getElementById("saveIdentityBtn")?.addEventListener("click", saveIdentity);
 
 const playerAvatarController = createPlayerAvatarController({ compressImage });
-playerAvatarController.setupListeners("identityAvatarWrapper", "identityAvatarInput", "identityAvatarPreview", "identityAvatarPlaceholder");
-playerAvatarController.setupListeners("playerAvatarWrapper", "playerAvatarInput", "playerAvatarPreview", "playerAvatarPlaceholder");
+playerAvatarController.setupListeners("identityAvatarWrapper", "identityAvatarInput", "identityAvatarPreview", "identityAvatarPlaceholder", "identityAvatarCameraBtn");
+playerAvatarController.setupListeners("playerAvatarWrapper", "playerAvatarInput", "playerAvatarPreview", "playerAvatarPlaceholder", "playerAvatarCameraBtn");
 document.getElementById("ratingDetailsModal")?.addEventListener("click", (e) => {
   if (e.target.id === "ratingDetailsModal") {
     closeRatingDetailsModal();
