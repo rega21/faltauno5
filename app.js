@@ -876,13 +876,29 @@ function openIdentityModal(playerId) {
   const player = players.find((p) => String(p.id) === String(playerId));
   if (!player) return;
   currentIdentityPlayerId = playerId;
+  pendingPlayerPhotoBlob = null;
   const modal = document.getElementById("identityModal");
   const title = document.getElementById("identityModalTitle");
   const nameInput = document.getElementById("identityName");
   const nicknameInput = document.getElementById("identityNickname");
+  const avatarInput = document.getElementById("identityAvatarInput");
+  const avatarPreview = document.getElementById("identityAvatarPreview");
+  const avatarPlaceholder = document.getElementById("identityAvatarPlaceholder");
   if (title) title.textContent = `Editar ${player.name}`;
   if (nameInput) nameInput.value = player.name || "";
   if (nicknameInput) nicknameInput.value = player.nickname || "";
+  if (avatarInput) avatarInput.value = "";
+  if (avatarPreview && avatarPlaceholder) {
+    if (player.photo_url) {
+      avatarPreview.src = player.photo_url;
+      avatarPreview.style.display = "";
+      avatarPlaceholder.style.display = "none";
+    } else {
+      avatarPreview.src = "";
+      avatarPreview.style.display = "none";
+      avatarPlaceholder.style.display = "";
+    }
+  }
   modal?.classList.remove("hidden");
 }
 
@@ -900,15 +916,23 @@ async function saveIdentity() {
   if (!name) { alert("El nombre no puede estar vacío"); return; }
   if ((name + nickname).length > 14) { alert("Nombre y apodo juntos no pueden superar 14 caracteres"); return; }
   try {
-    await apiClient.updatePlayer(currentIdentityPlayerId, {
+    let newPhotoUrl = undefined;
+    if (pendingPlayerPhotoBlob) {
+      newPhotoUrl = await apiClient.uploadPlayerPhoto(currentIdentityPlayerId, pendingPlayerPhotoBlob);
+      pendingPlayerPhotoBlob = null;
+    }
+    const updatePayload = {
       name,
       nickname,
       attack: toScoreNumber(player.attack),
       defense: toScoreNumber(player.defense),
       midfield: toScoreNumber(player.midfield),
-    });
+    };
+    if (newPhotoUrl !== undefined) updatePayload.photo_url = newPhotoUrl;
+    await apiClient.updatePlayer(currentIdentityPlayerId, updatePayload);
     player.name = name;
     player.nickname = nickname;
+    if (newPhotoUrl !== undefined) player.photo_url = newPhotoUrl;
     closeIdentityModal();
     renderPlayers({ preserveOrder: true });
     showToast("Identidad actualizada", 2200, "success");
@@ -3844,6 +3868,20 @@ if (_ratingModalContent) {
 }
 document.getElementById("closeIdentityModalBtn")?.addEventListener("click", closeIdentityModal);
 document.getElementById("saveIdentityBtn")?.addEventListener("click", saveIdentity);
+document.getElementById("identityAvatarWrapper")?.addEventListener("click", () => {
+  document.getElementById("identityAvatarInput")?.click();
+});
+document.getElementById("identityAvatarInput")?.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const blob = await compressImage(file, 256, 0.82);
+  pendingPlayerPhotoBlob = blob;
+  const url = URL.createObjectURL(blob);
+  const avatarPreview = document.getElementById("identityAvatarPreview");
+  const avatarPlaceholder = document.getElementById("identityAvatarPlaceholder");
+  if (avatarPreview) { avatarPreview.src = url; avatarPreview.style.display = ""; }
+  if (avatarPlaceholder) avatarPlaceholder.style.display = "none";
+});
 document.getElementById("ratingDetailsModal")?.addEventListener("click", (e) => {
   if (e.target.id === "ratingDetailsModal") {
     closeRatingDetailsModal();
