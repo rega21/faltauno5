@@ -55,6 +55,7 @@
       attack: toNumber(row.attack),
       defense: toNumber(row.defense),
       midfield: toNumber(row.midfield),
+      photo_url: row.photo_url || null,
       created_at: row.created_at || null,
     };
   }
@@ -195,7 +196,7 @@
       }
 
       const groupFilter = activeGroupId ? `&group_id=eq.${encodeURIComponent(activeGroupId)}` : "";
-      const rows = await requestSupabase(`/rest/v1/players?select=id,name,nickname,attack,defense,midfield,created_at&order=name.asc${groupFilter}`, {
+      const rows = await requestSupabase(`/rest/v1/players?select=id,name,nickname,attack,defense,midfield,photo_url,created_at&order=name.asc${groupFilter}`, {
         method: "GET",
         headers: buildSupabaseHeaders(),
       });
@@ -234,6 +235,7 @@
       }
 
       const payload = buildPlayerPayload(body);
+      if (body.photo_url !== undefined) payload.photo_url = body.photo_url;
       const groupFilter = activeGroupId ? `&group_id=eq.${encodeURIComponent(activeGroupId)}` : "";
       const rows = await requestSupabase(`/rest/v1/players?id=eq.${encodeURIComponent(String(id))}${groupFilter}`, {
         method: "PATCH",
@@ -547,6 +549,17 @@
       const created = Array.isArray(row) ? row[0] : row;
       if (!created || !created.id) throw new Error("No se pudo crear el grupo");
       return created;
+    },
+    async uploadPlayerPhoto(playerId, blob) {
+      const path = `${playerId}.jpg`;
+      const { error } = await window.SupabaseClient.storage
+        .from('player-avatars')
+        .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+      if (error) throw error;
+      const { data: { publicUrl } } = window.SupabaseClient.storage
+        .from('player-avatars')
+        .getPublicUrl(path);
+      return publicUrl;
     },
     async uploadGroupLogo(groupId, file) {
       const path = `${groupId}.jpg`;

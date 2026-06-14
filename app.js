@@ -2270,6 +2270,22 @@ async function editPlayer(id) {
   editNavIndex = editNavPlayers.findIndex(p => String(p.id) === String(id));
 
   currentEditingPlayerId = id;
+  pendingPlayerPhotoBlob = null;
+  const avatarPreview = document.getElementById("playerAvatarPreview");
+  const avatarPlaceholder = document.getElementById("playerAvatarPlaceholder");
+  const avatarInput = document.getElementById("playerAvatarInput");
+  if (avatarInput) avatarInput.value = "";
+  if (avatarPreview && avatarPlaceholder) {
+    if (playerForEdit.photo_url) {
+      avatarPreview.src = playerForEdit.photo_url;
+      avatarPreview.style.display = "";
+      avatarPlaceholder.style.display = "none";
+    } else {
+      avatarPreview.src = "";
+      avatarPreview.style.display = "none";
+      avatarPlaceholder.style.display = "";
+    }
+  }
   document.getElementById("editPlayerName").value = playerForEdit.name;
   document.getElementById("editPlayerNickname").value = playerForEdit.nickname || "";
   const fallbackAttack = 0;
@@ -2526,18 +2542,29 @@ async function saveEditPlayer() {
       const nextNickname = nickname || "";
       const shouldUpdateIdentity = name !== originalName || nextNickname !== originalNickname;
 
-      if (isIdentityAction && shouldUpdateIdentity) {
-        await apiClient.updatePlayer(editPlayerId, {
-          name,
-          nickname: nextNickname,
-          attack: toScoreNumber(player?.attack),
-          defense: toScoreNumber(player?.defense),
-          midfield: toScoreNumber(player?.midfield),
-        });
+      if (isIdentityAction) {
+        let newPhotoUrl = player?.photo_url || undefined;
+        if (pendingPlayerPhotoBlob) {
+          newPhotoUrl = await apiClient.uploadPlayerPhoto(editPlayerId, pendingPlayerPhotoBlob);
+          pendingPlayerPhotoBlob = null;
+        }
 
-        if (player) {
-          player.name = name;
-          player.nickname = nextNickname;
+        if (shouldUpdateIdentity || newPhotoUrl !== (player?.photo_url || undefined)) {
+          const updatePayload = {
+            name,
+            nickname: nextNickname,
+            attack: toScoreNumber(player?.attack),
+            defense: toScoreNumber(player?.defense),
+            midfield: toScoreNumber(player?.midfield),
+          };
+          if (newPhotoUrl !== undefined) updatePayload.photo_url = newPhotoUrl;
+          await apiClient.updatePlayer(editPlayerId, updatePayload);
+
+          if (player) {
+            player.name = name;
+            player.nickname = nextNickname;
+            if (newPhotoUrl !== undefined) player.photo_url = newPhotoUrl;
+          }
         }
 
         renderPlayers({ preserveOrder: true });
@@ -3190,6 +3217,7 @@ function compressImage(file, maxPx, quality) {
 }
 
 let pendingLogoFile = null;
+let pendingPlayerPhotoBlob = null;
 
 function openEditGroupLogoModal() {
   closeTopbarMenu();
@@ -3633,6 +3661,21 @@ document.getElementById("adminLoginModal").addEventListener("click", (e) => {
 
 document.getElementById("closeEditBtn")?.addEventListener("click", closeEditModal);
 document.getElementById("updatePlayerBtn")?.addEventListener("click", saveEditPlayer);
+
+document.getElementById("playerAvatarWrapper")?.addEventListener("click", () => {
+  document.getElementById("playerAvatarInput")?.click();
+});
+document.getElementById("playerAvatarInput")?.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const blob = await compressImage(file, 256, 0.82);
+  pendingPlayerPhotoBlob = blob;
+  const url = URL.createObjectURL(blob);
+  const avatarPreview = document.getElementById("playerAvatarPreview");
+  const avatarPlaceholder = document.getElementById("playerAvatarPlaceholder");
+  if (avatarPreview) { avatarPreview.src = url; avatarPreview.style.display = ""; }
+  if (avatarPlaceholder) avatarPlaceholder.style.display = "none";
+});
 
 document.getElementById("editPlayerAttack")?.addEventListener("input", updateSliderValues);
 document.getElementById("editPlayerDefense")?.addEventListener("input", updateSliderValues);
