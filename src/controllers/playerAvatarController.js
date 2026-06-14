@@ -4,10 +4,10 @@
 
     function showLightbox(src) {
       const overlay = document.createElement("div");
-      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;";
+      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer;";
       const img = document.createElement("img");
       img.src = src;
-      img.style.cssText = "max-width:90vw;max-height:90vh;border-radius:12px;object-fit:contain;";
+      img.style.cssText = "width:240px;height:240px;border-radius:50%;object-fit:cover;border:3px solid #444;box-shadow:0 0 40px rgba(0,0,0,0.6);";
       overlay.appendChild(img);
       overlay.addEventListener("click", () => overlay.remove());
       document.body.appendChild(overlay);
