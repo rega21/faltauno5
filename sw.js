@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fobal5-2026-06-16d';
+const CACHE_NAME = 'fobal5-2026-06-16e';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
