@@ -3479,6 +3479,10 @@ document.getElementById('createPlayerBtn')?.addEventListener('click', () => {
     document.getElementById('newPlayerName')?.focus();
     return;
   }
+  if ([attack, defense, midfield, stamina, garra, technique].some(v => v === 0)) {
+    showToast('Todos los stats deben tener al menos 1 punto', 3000, 'error');
+    return;
+  }
   nameError?.classList.add('hidden');
   if ((name + nickname).length > 14) {
     showToast('Nombre y apodo juntos no pueden superar 14 caracteres', 3000, 'error');
