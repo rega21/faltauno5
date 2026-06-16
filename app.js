@@ -658,56 +658,42 @@ const STAT_COLORS_ARRAY = [
   STAT_COLORS.technique,
 ];
 
-const PLAYER_ROLES = [
-  {
-    id: "delantero",
-    label: "Delantero",
-    color: "#e85d4a",
-    weights: { attack: 2.0, midfield: 1.2, defense: 0.5, stamina: 1.0, garra: 1.2, technique: 1.5 },
-  },
-  {
-    id: "defensor",
-    label: "Defensor",
-    color: "#00E5FF",
-    weights: { attack: 0.5, midfield: 1.0, defense: 2.0, stamina: 1.5, garra: 1.2, technique: 0.8 },
-  },
-  {
-    id: "mediocampista",
-    label: "Mediocampista",
-    color: "#8e6bbf",
-    weights: { attack: 1.0, midfield: 2.0, defense: 1.0, stamina: 1.2, garra: 1.0, technique: 1.5 },
-  },
-  {
-    id: "extremo",
-    label: "Extremo",
-    color: "#e67e22",
-    weights: { attack: 1.5, midfield: 1.0, defense: 0.5, stamina: 1.5, garra: 1.0, technique: 1.8 },
-  },
-  {
-    id: "todoterreno",
-    label: "Todoterreno",
-    color: "#3498db",
-    weights: { attack: 1.0, midfield: 1.0, defense: 1.0, stamina: 1.5, garra: 1.8, technique: 1.0 },
-  },
+const PLAYER_PROFILES = [
+  { id: "atacante",    label: "Atacante",    color: "#e85d4a" },
+  { id: "defensor",   label: "Defensor",    color: "#00E5FF" },
+  { id: "todoterreno",label: "Todoterreno", color: "#3498db" },
+  { id: "equilibrado",label: "Equilibrado", color: "#8e6bbf" },
 ];
 
 function detectPlayerRole(stats) {
-  let bestRole = PLAYER_ROLES[0];
-  let bestScore = -Infinity;
-  for (const role of PLAYER_ROLES) {
-    const score =
-      stats.attack * role.weights.attack +
-      stats.midfield * role.weights.midfield +
-      stats.defense * role.weights.defense +
-      stats.stamina * role.weights.stamina +
-      stats.garra * role.weights.garra +
-      stats.technique * role.weights.technique;
-    if (score > bestScore) {
-      bestScore = score;
-      bestRole = role;
-    }
+  const atk = Number(stats.attack  ?? 0);
+  const def = Number(stats.defense  ?? 0);
+  const mid = Number(stats.midfield ?? 0);
+  const stm = Number(stats.stamina  ?? 0);
+  const gar = Number(stats.garra    ?? 0);
+  const tec = Number(stats.technique?? 0);
+
+  const offScore = (atk + tec) / 2;
+  const defScore = def;
+  const allStats = [atk, def, mid, stm, gar, tec];
+  const avg      = allStats.reduce((a, b) => a + b, 0) / allStats.length;
+  const maxStat  = Math.max(...allStats);
+  const minStat  = Math.min(...allStats);
+
+  // Atacante: score ofensivo es el pico claro del jugador
+  if (offScore >= defScore + 1.5 && offScore >= avg + 1.0) {
+    return PLAYER_PROFILES.find(p => p.id === "atacante");
   }
-  return bestRole;
+  // Defensor: defensa es el pico claro
+  if (defScore >= offScore + 1.5 && defScore >= avg + 1.0) {
+    return PLAYER_PROFILES.find(p => p.id === "defensor");
+  }
+  // Todoterreno: nivel general alto y sin un stat muy dominante
+  if (avg >= 6.0 && (maxStat - minStat) < 3.0) {
+    return PLAYER_PROFILES.find(p => p.id === "todoterreno");
+  }
+  // Equilibrado: sin dominancia clara
+  return PLAYER_PROFILES.find(p => p.id === "equilibrado");
 }
 
 let playerRadarChartInstance = null;
@@ -1022,6 +1008,13 @@ function enrichPlayerWithCommunityState(player) {
   const effectiveGarra = isValidated ? communityGarra : null;
   const effectiveTechnique = isValidated ? communityTechnique : null;
 
+  const communityProfile = isValidated
+    ? detectPlayerRole({
+        attack: communityAttack, defense: communityDefense, midfield: communityMidfield,
+        stamina: communityStamina ?? 0, garra: communityGarra ?? 0, technique: communityTechnique ?? 0,
+      })
+    : null;
+
   return {
     ...player,
     communityVotes: votes,
@@ -1032,6 +1025,7 @@ function enrichPlayerWithCommunityState(player) {
     communityTrendDirection: trendDirection,
     communityTrendSymbol: trendMeta.symbol,
     communityTrendLabel: trendMeta.label,
+    communityProfile,
     effectiveAttack,
     effectiveDefense,
     effectiveMidfield,
@@ -1283,16 +1277,9 @@ function renderPlayers(options = {}) {
     const nick = p.nickname?.trim()
       ? `<span class="player-nick">"${escapeHtml(p.nickname)}"</span>`
       : "";
-    const ratingAverage = (
-      (
-        toScoreNumber(p.effectiveAttack) +
-        toScoreNumber(p.effectiveDefense) +
-        toScoreNumber(p.effectiveMidfield)
-      ) / 3
-    ).toFixed(1);
     const ratingIcon = p.communityStatus === "validated" ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
     const ratingValue = p.communityStatus === "validated"
-      ? ratingAverage
+      ? (p.communityProfile?.label ?? "Validado")
       : `Pendiente ${p.communityVotes}/${p.communityMinVotes}`;
     const canOpenRating = p.communityStatus === "validated";
     const ratingDisabledAttr = canOpenRating ? "" : " disabled aria-disabled=\"true\"";

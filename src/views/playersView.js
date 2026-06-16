@@ -116,10 +116,9 @@
         const effectiveAttack = Number(player.effectiveAttack ?? player.attack ?? 0);
         const effectiveDefense = Number(player.effectiveDefense ?? player.defense ?? 0);
         const effectiveMidfield = Number(player.effectiveMidfield ?? player.midfield ?? 0);
-        const ratingAverage = Number(player.communityAverage ?? 0).toFixed(1);
         const ratingIcon = player.communityStatus === "validated" ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
         const ratingValue = player.communityStatus === "validated"
-          ? ratingAverage
+          ? (player.communityProfile?.label ?? "Validado")
           : `Pendiente ${player.communityVotes ?? 0}/${player.communityMinVotes ?? 5}`;
         const canOpenRating = player.communityStatus === "validated";
         const ratingDisabledAttr = canOpenRating ? "" : " disabled aria-disabled=\"true\"";
