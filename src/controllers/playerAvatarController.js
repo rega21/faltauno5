@@ -64,7 +64,7 @@
     function getPendingBlob() { return pendingBlob; }
     function clearPendingBlob() { pendingBlob = null; }
 
-    return { initAvatar, setupListeners, getPendingBlob, clearPendingBlob };
+    return { initAvatar, setupListeners, getPendingBlob, clearPendingBlob, showLightbox };
   }
 
   global.createPlayerAvatarController = createPlayerAvatarController;

@@ -140,20 +140,22 @@
           ? `<span class="player-stats">${escapeHtml(statsText)}</span>`
           : "";
 
-        const deleteControl = (canDelete ?? adminAuthenticated)
-          ? `<button class="btn-delete" data-id="${player.id}" title="Eliminar"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`
-          : "";
         const editButtonClass = yaVotaste ? "btn-edit btn-edit--voted" : "btn-edit";
         const editButtonTitle = yaVotaste ? "Editar calificación" : "Calificar";
         const editButtonLabel = yaVotaste ? "EDITAR ✏️" : "CALIFICAR";
 
         const adminControls = `<div class="admin-controls">
           <button class="${editButtonClass}" data-id="${player.id}" title="${editButtonTitle}">${editButtonLabel}</button>
-          ${deleteControl}
         </div>`;
+
+        const initials = escapeHtml((player.name || "?")[0].toUpperCase());
+        const avatarMarkup = player.photo_url
+          ? `<img class="player-card-avatar" src="${escapeHtml(player.photo_url)}" alt="${escapeHtml(player.name)}">`
+          : `<div class="player-card-avatar player-card-avatar--initials">${initials}</div>`;
 
         return `
           <article class="card">
+            ${avatarMarkup}
             <div class="player-info">
               <div class="player-name player-name--editable" data-id="${player.id}" title="Editar nombre">
                 ${escapeHtml(player.name)} ${nick}<svg class="player-edit-icon" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
@@ -172,9 +174,14 @@
     playersList.querySelectorAll(".btn-edit").forEach((button) => {
       button.addEventListener("click", () => onEdit?.(button.dataset.id));
     });
-    playersList.querySelectorAll(".btn-delete").forEach((button) => {
-      button.addEventListener("click", () => onDelete?.(button.dataset.id));
+
+    playersList.querySelectorAll("img.player-card-avatar").forEach((img) => {
+      img.style.cursor = "zoom-in";
+      img.addEventListener("click", () => {
+        window.playerAvatarController?.showLightbox(img.src);
+      });
     });
+
     playersList.querySelectorAll(".player-community--rating").forEach((button) => {
       button.addEventListener("click", () => onRatingClick?.(button.dataset.ratingId));
     });

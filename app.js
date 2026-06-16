@@ -884,6 +884,11 @@ function openIdentityModal(playerId) {
   if (title) title.textContent = `Editar ${player.name}`;
   if (nameInput) nameInput.value = player.name || "";
   if (nicknameInput) nicknameInput.value = player.nickname || "";
+  const canDelete = adminAuthenticated ||
+    (currentUser?.id && currentUser.id === activeGroupCreatedBy) ||
+    currentUserMembership?.role === "admin";
+  const deleteBtn = document.getElementById("deleteFromIdentityBtn");
+  if (deleteBtn) deleteBtn.classList.toggle("hidden", !canDelete);
   modal?.classList.remove("hidden");
 }
 
@@ -1308,10 +1313,6 @@ function renderPlayers(options = {}) {
       ? `<span class="player-stats">${scoreText}</span>`
       : "";
 
-    const deleteControl = canDelete
-      ? `<button class="btn-delete" data-id="${p.id}" title="Eliminar"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`
-      : "";
-
     const editButtonClass = yaVotaste ? "btn-edit btn-edit--voted" : "btn-edit";
     const editButtonTitle = yaVotaste ? "Editar calificación" : "Calificar";
     const editButtonLabel = yaVotaste ? "✏️ EDITAR" : "CALIFICAR";
@@ -1319,11 +1320,16 @@ function renderPlayers(options = {}) {
 
     const adminControls = `<div class="admin-controls">
           ${editControl}
-          ${deleteControl}
         </div>`;
+
+    const initials = escapeHtml((p.name || "?")[0].toUpperCase());
+    const avatarMarkup = p.photo_url
+      ? `<img class="player-card-avatar" src="${escapeHtml(p.photo_url)}" alt="${escapeHtml(p.name)}">`
+      : `<div class="player-card-avatar player-card-avatar--initials">${initials}</div>`;
 
     return `
       <article class="card">
+        ${avatarMarkup}
         <div class="player-info">
           <div class="player-name">
             ${escapeHtml(p.name)} ${nick}
@@ -1343,9 +1349,6 @@ function renderPlayers(options = {}) {
     btn.addEventListener("click", () => editPlayer(btn.dataset.id));
   });
 
-  document.querySelectorAll(".btn-delete").forEach(btn => {
-    btn.addEventListener("click", () => showDeleteConfirm(btn.dataset.id));
-  });
   document.querySelectorAll(".player-community--rating").forEach((button) => {
     button.addEventListener("click", () => openRatingDetailsByPlayerId(button.dataset.ratingId));
   });
@@ -3825,8 +3828,14 @@ if (_ratingModalContent) {
 }
 document.getElementById("closeIdentityModalBtn")?.addEventListener("click", closeIdentityModal);
 document.getElementById("saveIdentityBtn")?.addEventListener("click", saveIdentity);
+document.getElementById("deleteFromIdentityBtn")?.addEventListener("click", () => {
+  const id = currentIdentityPlayerId;
+  closeIdentityModal();
+  showDeleteConfirm(id);
+});
 
 const playerAvatarController = createPlayerAvatarController({ compressImage });
+window.playerAvatarController = playerAvatarController;
 playerAvatarController.setupListeners("identityAvatarWrapper", "identityAvatarInput", "identityAvatarPreview", "identityAvatarPlaceholder", "identityAvatarCameraBtn");
 playerAvatarController.setupListeners("playerAvatarWrapper", "playerAvatarInput", "playerAvatarPreview", "playerAvatarPlaceholder", "playerAvatarCameraBtn");
 document.getElementById("ratingDetailsModal")?.addEventListener("click", (e) => {
