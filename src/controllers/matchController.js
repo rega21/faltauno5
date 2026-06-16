@@ -2,9 +2,10 @@
   function createMatchController({ apiClient }) {
     function createRandomTeams(selectedPlayers) {
       const shuffled = [...selectedPlayers].sort(() => Math.random() - 0.5);
+      const half = Math.floor(shuffled.length / 2);
       return {
-        a: shuffled.slice(0, 5),
-        b: shuffled.slice(5, 10),
+        a: shuffled.slice(0, half),
+        b: shuffled.slice(half),
       };
     }
 
@@ -197,9 +198,10 @@
         b: baseTeams.b.filter((item) => String(item.id) !== String(playerId)),
       };
 
-      if (team === "a" && nextTeams.a.length < 5) {
+      const teamSize = Math.floor(selectedPlayers.length / 2);
+      if (team === "a" && nextTeams.a.length < teamSize) {
         nextTeams.a.push(player);
-      } else if (team === "b" && nextTeams.b.length < 5) {
+      } else if (team === "b" && nextTeams.b.length < teamSize) {
         nextTeams.b.push(player);
       }
 

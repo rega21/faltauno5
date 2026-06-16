@@ -16,6 +16,7 @@
   function renderMatchPlayersList({
     players,
     selectedPlayers,
+    maxPlayers = 10,
     onSelectionChanged,
   }) {
     const matchPlayersList = document.getElementById("matchPlayersList");
@@ -30,7 +31,7 @@
       .map((player) => {
         const playerId = String(player.id);
         const isSelected = selectedIds.has(playerId);
-        const disabled = selectedIds.size >= 10 && !isSelected ? "disabled" : "";
+        const disabled = selectedIds.size >= maxPlayers && !isSelected ? "disabled" : "";
         const hasNickname = Boolean(player.nickname?.trim());
 
         return `
@@ -52,7 +53,7 @@
         matchPlayersList.querySelectorAll('input[type="checkbox"][data-id]:checked')
       ).map((input) => String(input.dataset.id));
 
-      const ready = checkedIds.length === 10;
+      const ready = checkedIds.length === maxPlayers;
       matchPlayersList.querySelectorAll(".card-selectable").forEach((card) => {
         const checkbox = card.querySelector("input");
         if (!checkbox) return;
@@ -68,7 +69,7 @@
       const matchCount = document.getElementById("matchCount");
 
       if (matchCount) {
-        matchCount.textContent = `${checkedIds.length}/10`;
+        matchCount.textContent = `${checkedIds.length}/${maxPlayers}`;
         matchCount.classList.toggle("ready", ready);
       }
       if (startBtn) startBtn.disabled = !ready;

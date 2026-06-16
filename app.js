@@ -31,6 +31,7 @@ let currentEditReachedVoteLimit = false;
 
 let players = [];
 let selectedPlayers = [];
+let matchFormat = "f5";
 let currentTeams = null;
 let playerSearchTerm = "";
 let playersListVisualOrderIds = [];
@@ -134,7 +135,8 @@ const matchController = window.createMatchController
   : {
       createRandomTeams(selectedPlayers) {
         const shuffled = [...selectedPlayers].sort(() => Math.random() - 0.5);
-        return { a: shuffled.slice(0, 5), b: shuffled.slice(5, 10) };
+        const half = Math.floor(shuffled.length / 2);
+        return { a: shuffled.slice(0, half), b: shuffled.slice(half) };
       },
       createBalancedTeams(selectedPlayers, coOccurrenceMap) {
         const players = (selectedPlayers || []).map((player) => {
@@ -314,9 +316,9 @@ const matchController = window.createMatchController
           b: baseTeams.b.filter((item) => String(item.id) !== String(playerId)),
         };
 
-        if (team === "a" && nextTeams.a.length < 5) {
+        if (team === "a" && nextTeams.a.length < getTeamSize()) {
           nextTeams.a.push(player);
-        } else if (team === "b" && nextTeams.b.length < 5) {
+        } else if (team === "b" && nextTeams.b.length < getTeamSize()) {
           nextTeams.b.push(player);
         }
 
@@ -1341,12 +1343,18 @@ function renderPlayers(options = {}) {
   });
 }
 
+function getMatchLimit() {
+  return matchFormat === "f7" ? 14 : matchFormat === "f6" ? 12 : 10;
+}
+function getTeamSize() { return getMatchLimit() / 2; }
+
 /* Match view */
 function renderMatchPlayers() {
   if (window.MatchView?.renderMatchPlayersList) {
     window.MatchView.renderMatchPlayersList({
       players,
       selectedPlayers,
+      maxPlayers: getMatchLimit(),
       onSelectionChanged: (selectedIds) => {
         const selectedIdSet = new Set((selectedIds || []).map((id) => String(id)));
         selectedPlayers = getPlayersForMatch(players).filter((player) => selectedIdSet.has(String(player.id)));
@@ -1366,7 +1374,8 @@ function updateSelectedPlayers() {
     document.querySelector(`#matchPlayersList input[data-id="${p.id}"]`)?.checked
   );
 
-  const ready = selectedPlayers.length === 10;
+  const limit = getMatchLimit();
+  const ready = selectedPlayers.length === limit;
   document.querySelectorAll("#matchPlayersList .card-selectable").forEach(card => {
     const checkbox = card.querySelector("input");
     if (!checkbox) return;
@@ -1380,7 +1389,7 @@ function updateSelectedPlayers() {
   const genBtn = document.getElementById("generateBalancedBtn");
   const genManualBtn = document.getElementById("generateManualBtn");
   const matchCount = document.getElementById("matchCount");
-  matchCount.textContent = `${selectedPlayers.length}/10`;
+  matchCount.textContent = `${selectedPlayers.length}/${limit}`;
   matchCount.classList.toggle("ready", ready);
   if (startBtn) startBtn.disabled = !ready;
   if (genBtn) genBtn.disabled = !ready;
@@ -1402,8 +1411,8 @@ function generateBalancedTeams() {
     return;
   }
 
-  if (selectedPlayers.length !== 10) {
-    alert('Selecciona 10 jugadores para generar equipos balanceados');
+  if (selectedPlayers.length !== getMatchLimit()) {
+    alert(`Selecciona ${getMatchLimit()} jugadores para generar equipos balanceados`);
     return;
   }
 
@@ -1461,14 +1470,15 @@ function hasPendingScheduledMatch(excludeMatchId = "") {
 
 function updateMatchCreationLockUi() {
   const hasPending = hasPendingScheduledMatch();
+  const limit = getMatchLimit();
   const genBtn = document.getElementById("generateBalancedBtn");
   const genManualBtn = document.getElementById("generateManualBtn");
   const startBtn = document.getElementById("startMatchBtn");
   const pendingNotice = document.getElementById("pendingMatchNotice");
 
-  if (genBtn) genBtn.disabled = hasPending || selectedPlayers.length !== 10;
-  if (genManualBtn) genManualBtn.disabled = hasPending || selectedPlayers.length !== 10;
-  if (startBtn) startBtn.disabled = hasPending || selectedPlayers.length !== 10;
+  if (genBtn) genBtn.disabled = hasPending || selectedPlayers.length !== limit;
+  if (genManualBtn) genManualBtn.disabled = hasPending || selectedPlayers.length !== limit;
+  if (startBtn) startBtn.disabled = hasPending || selectedPlayers.length !== limit;
   if (pendingNotice) pendingNotice.classList.toggle("hidden", !hasPending);
 }
 
@@ -3512,8 +3522,8 @@ if (genManualBtnEl) genManualBtnEl.addEventListener("click", () => {
   // Mostrar la tabla de asignación y ocultar la lista de selección
   const matchSelection = document.getElementById('matchSelection');
   const manualSelector = document.getElementById('manualTeamSelection');
-  if (selectedPlayers.length !== 10) {
-    alert("Debes seleccionar exactamente 10 jugadores");
+  if (selectedPlayers.length !== getMatchLimit()) {
+    alert(`Debes seleccionar exactamente ${getMatchLimit()} jugadores`);
     return;
   }
   currentTeams = { a: [], b: [] };
@@ -3525,8 +3535,8 @@ if (genManualBtnEl) genManualBtnEl.addEventListener("click", () => {
 
 const confirmTeamsBtn = document.getElementById("confirmTeamsBtn");
 if (confirmTeamsBtn) confirmTeamsBtn.addEventListener("click", () => {
-  if (!currentTeams || currentTeams.a.length !== 5 || currentTeams.b.length !== 5) {
-    alert("Debes seleccionar 5 jugadores en cada equipo");
+  if (!currentTeams || currentTeams.a.length !== getTeamSize() || currentTeams.b.length !== getTeamSize()) {
+    alert(`Debes seleccionar ${getTeamSize()} jugadores en cada equipo`);
     return;
   }
   showMatchSetup();
@@ -3545,12 +3555,23 @@ if (backToSelectionFromManualBtn) backToSelectionFromManualBtn.addEventListener(
 });
 
 // Segmented control for match mode
-document.querySelectorAll('.segmented .seg-btn').forEach(btn => {
+document.querySelectorAll('#matchMode .seg-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.segmented .seg-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#matchMode .seg-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const mode = btn.dataset.mode;
     setMatchMode(mode);
+  });
+});
+
+// Segmented control for match format (F5/F6/F7)
+document.querySelectorAll('#matchFormatSeg .seg-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#matchFormatSeg .seg-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    matchFormat = btn.dataset.format;
+    selectedPlayers = [];
+    renderMatchPlayers();
   });
 });
 
@@ -3593,7 +3614,7 @@ function renderManualTeamSelection() {
 
   const teamACount = currentTeams?.a?.length || 0;
   const teamBCount = currentTeams?.b?.length || 0;
-  teamCount.textContent = `A: ${teamACount}/5 - B: ${teamBCount}/5`;
+  teamCount.textContent = `A: ${teamACount}/${getTeamSize()} - B: ${teamBCount}/${getTeamSize()}`;
 
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
   const rowBg = isDark ? "#1f2937" : "#f9fafb";
