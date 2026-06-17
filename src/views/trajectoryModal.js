@@ -63,31 +63,20 @@
     const pct = document.getElementById("pstatsWinRatePct");
     const msg = document.getElementById("pstatsWinRateMsg");
     const sep = document.getElementById("pstatsWinRateSep");
+    if (s.matchesPlayed < 3) {
+      if (arc) arc.style.strokeDashoffset = "251.3";
+      if (pct) pct.textContent = "—%";
+      if (msg) { msg.textContent = "Mínimo 3 partidos"; msg.setAttribute("opacity", "1"); }
+      if (sep) sep.setAttribute("opacity", "1");
+      return;
+    }
     if (arc) arc.style.strokeDashoffset = String(251.3 * (1 - s.winRate / 100));
     if (msg) { msg.textContent = ""; msg.setAttribute("opacity", "0"); }
     if (sep) sep.setAttribute("opacity", "0");
     if (pct) {
       const target = s.winRate;
-      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-      const showMsg = () => {
-        if (!msg) return;
-        const w = target;
-        const phrases =
-          w === 100 ? ["¿Cuándo te vas a Europa?"]
-          : w <= 20  ? ["No liga una", "Clara crisis institucional"]
-          : w <= 35  ? ["Necesita pretemporada", "Le está costando arrancar"]
-          : w <= 49  ? ["Está para levantar", "Puede dar más"]
-          : w === 50 ? ["Ni fu ni fa", "Ni frío ni caliente", "Temporada pareja"]
-          : w <= 65  ? ["Cumple y suma", "Viene bien"]
-          : w <= 80  ? ["Anda dulce", "Está fino"]
-          :            ["Está intratable", "Dale campeón"];
-        msg.textContent = pick(phrases);
-        msg.setAttribute("opacity", "1");
-        if (sep) sep.setAttribute("opacity", "1");
-      };
       if (target === 0) {
         pct.textContent = "0%";
-        setTimeout(showMsg, 400);
       } else {
         const duration = 1200;
         const startTime = performance.now();
@@ -96,7 +85,6 @@
           const eased = 1 - Math.pow(1 - progress, 3);
           pct.textContent = Math.round(eased * target) + "%";
           if (progress < 1) requestAnimationFrame(tick);
-          else showMsg();
         }
         requestAnimationFrame(tick);
       }
