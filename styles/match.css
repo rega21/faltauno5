@@ -18,20 +18,16 @@
   color: white;
 }
 
-/* Keep match action buttons visible while scrolling the player list */
+/* Match action buttons below the scrollable list */
 .match-controls{
   display:flex;
   flex-direction:column;
   gap:8px;
   align-items:stretch;
   margin-top:12px;
-  position: -webkit-sticky;
-  position: sticky;
-  top: 80px; /* adjust if topbar height differs */
-  z-index: 40;
-  background: white; /* ensures buttons remain readable when overlaying content */
+  background: white;
   padding-top:6px;
-  padding-bottom:calc(6px + env(safe-area-inset-bottom));
+  padding-bottom:6px;
   border-radius: 8px;
 }
 
@@ -49,9 +45,6 @@
 }
 
 .match-selection-header{
-  position: -webkit-sticky;
-  position: sticky;
-  top: calc(64px + env(safe-area-inset-top, 0px));
   background: white;
   z-index: 20;
   border-bottom: 1px solid #eee;
@@ -61,7 +54,6 @@
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  margin-bottom:10px;
 }
 
 .match-selection-header .muted{
@@ -123,20 +115,13 @@
 
 /* Scrollable player list in match selection */
 #matchPlayersList{
-  max-height: 60vh;
+  max-height: 50vh;
   overflow-y: auto;
   padding-right: 4px;
   overscroll-behavior: contain;
 }
 
 @media (max-width: 768px){
-  #matchPlayersList{
-    max-height: none;
-    overflow-y: visible;
-    padding-right: 0;
-    overscroll-behavior: auto;
-  }
-
   .match-song-icon-btn{
     width:36px;
     height:36px;
