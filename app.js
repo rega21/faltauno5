@@ -4573,9 +4573,17 @@ document.getElementById("closeMembersBtn")?.addEventListener("click", () => {
     indicator.classList.remove("ptr-ready", "ptr-spinning");
   }
 
+  function isInsideScrollableContainer(el) {
+    while (el && el !== document.body) {
+      if (el.scrollHeight > el.clientHeight && el.scrollTop > 0) return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
+
   document.addEventListener("touchstart", (e) => {
     const modalOpen = !!document.querySelector(".modal:not(.hidden)");
-    if (window.scrollY <= 0 && e.touches.length === 1 && !modalOpen) {
+    if (window.scrollY <= 0 && e.touches.length === 1 && !modalOpen && !isInsideScrollableContainer(e.target)) {
       startY = e.touches[0].clientY;
       pulling = true;
       indicator.style.transition = "none";
