@@ -378,6 +378,20 @@
     teamB.innerHTML = (teams.b || []).map((p, i) => renderPlayer(p, "b", i)).join("");
 
     if (onSwap) initSwapListeners();
+
+    setupPitchButton(teams);
+  }
+
+  function setupPitchButton(teams) {
+    const btn = document.getElementById("viewPitchBtn");
+    if (!btn) return;
+    const clone = btn.cloneNode(true);
+    btn.replaceWith(clone);
+    clone.addEventListener("click", () => {
+      if (window.PitchView) {
+        window.PitchView.openBoth(teams, typeof matchFormat !== "undefined" ? matchFormat : "f5");
+      }
+    });
   }
 
   const FAVORITE_REASONS = [
