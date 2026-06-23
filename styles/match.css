@@ -49,8 +49,9 @@
 }
 
 .match-selection-header{
+  position: -webkit-sticky;
   position: sticky;
-  top: 0;
+  top: calc(64px + env(safe-area-inset-top, 0px));
   background: white;
   z-index: 20;
   border-bottom: 1px solid #eee;
