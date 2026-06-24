@@ -196,8 +196,15 @@
   align-items: center;
 }
 
+/* Swappable cursor */
+.pitch-field--swappable .pitch-player {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Player node */
 .pitch-player {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -209,7 +216,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid var(--team-color, #10b981);
+  border: 2px solid var(--team-color, #f97316);
   overflow: hidden;
   background: #374151;
   display: flex;
@@ -247,6 +254,32 @@
   border-radius: 3px;
 }
 
+/* Swap selection — spinning ring */
+.pitch-player.pitch-swap-selected::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 48px;
+  height: 48px;
+  margin-left: -24px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  border-top-color: #fff;
+  border-right-color: rgba(255,255,255,0.3);
+  animation: pitch-swap-spin 0.7s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.pitch-player.pitch-swap-selected .pitch-player-avatar {
+  box-shadow: 0 0 10px rgba(255,255,255,0.35);
+}
+
+@keyframes pitch-swap-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Responsive: slightly bigger on wider screens */
 @media (min-width: 380px) {
   .pitch-player-avatar {
@@ -259,5 +292,10 @@
   .pitch-player-name {
     font-size: 11px;
     max-width: 68px;
+  }
+  .pitch-player.pitch-swap-selected::before {
+    width: 52px;
+    height: 52px;
+    margin-left: -26px;
   }
 }

@@ -379,18 +379,39 @@
 
     if (onSwap) initSwapListeners();
 
-    setupPitchButton(teams);
+    setupMatchViewToggle(teams, onSwap);
   }
 
-  function setupPitchButton(teams) {
-    const btn = document.getElementById("viewPitchBtn");
-    if (!btn) return;
-    const clone = btn.cloneNode(true);
-    btn.replaceWith(clone);
-    clone.addEventListener("click", () => {
-      if (window.PitchView) {
-        window.PitchView.openBoth(teams, typeof matchFormat !== "undefined" ? matchFormat : "f5");
-      }
+  let matchViewToggleAttached = false;
+
+  function setupMatchViewToggle(teams, onSwap) {
+    const format = typeof matchFormat !== "undefined" ? matchFormat : "f5";
+
+    if (window.PitchView) {
+      window.PitchView.renderInline("inlinePitch", teams, format, onSwap);
+    }
+
+    const inlinePitch = document.getElementById("inlinePitch");
+    const teamsContainer = document.getElementById("teamsContainer");
+    const toggle = document.getElementById("matchViewToggle");
+    if (!toggle) return;
+
+    const btns = toggle.querySelectorAll(".seg-btn");
+    const activeView = toggle.querySelector(".seg-btn.active")?.dataset.view || "pitch";
+    if (inlinePitch) inlinePitch.classList.toggle("hidden", activeView !== "pitch");
+    if (teamsContainer) teamsContainer.classList.toggle("hidden", activeView !== "lists");
+
+    if (matchViewToggleAttached) return;
+    matchViewToggleAttached = true;
+
+    btns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btns.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const view = btn.dataset.view;
+        if (inlinePitch) inlinePitch.classList.toggle("hidden", view !== "pitch");
+        if (teamsContainer) teamsContainer.classList.toggle("hidden", view !== "lists");
+      });
     });
   }
 

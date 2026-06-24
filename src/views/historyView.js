@@ -315,7 +315,7 @@
 
       <div class="match-grid">
         <div>
-          <div class="match-team match-team--a" style="font-weight:700; color:#10b981; margin-bottom:12px; font-size:13px; padding:8px; border-radius:6px;">● EQUIPO A</div>
+          <div class="match-team match-team--a" style="font-weight:700; color:#f97316; margin-bottom:12px; font-size:13px; padding:8px; border-radius:6px;">● EQUIPO A</div>
           <div style="display:flex; flex-direction:column; gap:8px;">
             ${(m.teamA || []).map((player) => renderMatchPlayer(player)).join("")}
           </div>

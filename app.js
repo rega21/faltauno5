@@ -1402,6 +1402,7 @@ function divideTeams() {
   }
 
   currentTeams = matchController.createRandomTeams(selectedPlayers);
+  window.PitchView?.resetManualOrder?.();
   renderTeams();
   showMatchSetup();
 }
@@ -1436,6 +1437,7 @@ function generateBalancedTeams() {
   } catch (_e) {}
 
   currentTeams = matchController.createBalancedTeams(selectedPlayers, coOccurrenceMap);
+  window.PitchView?.resetManualOrder?.();
   renderTeams();
   showMatchSetup();
 }
@@ -3634,7 +3636,7 @@ function renderManualTeamSelection() {
       <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:${rowBg}; border-radius:6px; border:1px solid ${rowBorder}; color:${rowColor};">
         <span style="font-weight:500;">${p.name}${p.nickname ? ' <span style="color:#9ca3af;">"' + p.nickname + '"</span>' : ''}</span>
         <div style="display:flex; gap:6px;">
-          <button class="team-btn-a" data-idx="${idx}" style="padding:4px 12px; border-radius:4px; border:none; cursor:pointer; background:${inTeamA ? '#10b981' : btnInactive}; color:white; font-weight:600; font-size:12px;">● A</button>
+          <button class="team-btn-a" data-idx="${idx}" style="padding:4px 12px; border-radius:4px; border:none; cursor:pointer; background:${inTeamA ? '#f97316' : btnInactive}; color:white; font-weight:600; font-size:12px;">● A</button>
           <button class="team-btn-b" data-idx="${idx}" style="padding:4px 12px; border-radius:4px; border:none; cursor:pointer; background:${inTeamB ? '#3b82f6' : btnInactive}; color:white; font-weight:600; font-size:12px;">● B</button>
         </div>
       </div>

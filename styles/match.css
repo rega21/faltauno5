@@ -44,6 +44,13 @@
   flex:1;
 }
 
+#matchViewToggle{
+  width:100%;
+}
+#matchViewToggle .seg-btn{
+  flex:1;
+}
+
 .match-selection-header{
   background: white;
   z-index: 20;
@@ -402,10 +409,10 @@ gmp-place-autocomplete {
 [data-theme="dark"] .team-player.swap-selected{ background: rgba(59,130,246,0.2); }
 .team-player.swap-done{ border: 1px solid rgba(16,185,129,0.3); background: rgba(16,185,129,0.08); transition: border 0.3s, background 0.3s; }
 [data-theme="dark"] .team-player.swap-done{ border: 1px solid rgba(16,185,129,0.25); background: rgba(16,185,129,0.1); }
-.match-team--a{ background: #ecfdf5; }
+.match-team--a{ background: #fff7ed; }
 .match-team--b{ background: #eff6ff; }
 [data-theme="dark"] .match-team{ background: #374151; }
-[data-theme="dark"] .match-team--a{ background: #064e3b; }
+[data-theme="dark"] .match-team--a{ background: #431407; }
 [data-theme="dark"] .match-team--b{ background: #1e3a5f; }
 [data-theme="dark"] .card.match-entry .match-score{ color: var(--text); }
 [data-theme="dark"] .card.match-entry .dash{ color: #6b7280; }

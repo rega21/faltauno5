@@ -149,9 +149,16 @@
         <div id="matchSetup" class="hidden">
           <button class="btn-link" id="backToSelectionBtn">← Volver a selección</button>
 
-          <div class="teams-container">
+          <div class="segmented" id="matchViewToggle" style="margin-bottom:12px;">
+            <button class="seg-btn active" data-view="pitch">🏟️ Cancha</button>
+            <button class="seg-btn" data-view="lists">📋 Listas</button>
+          </div>
+
+          <div id="inlinePitch"></div>
+
+          <div class="teams-container hidden" id="teamsContainer">
             <div class="team">
-              <h3 class="team-title" style="color: #10b981;">● Equipo A</h3>
+              <h3 class="team-title" style="color: #f97316;">● Equipo A</h3>
               <div class="team-list" id="teamA"></div>
             </div>
             <div class="team">
@@ -159,8 +166,6 @@
               <div class="team-list" id="teamB"></div>
             </div>
           </div>
-
-          <button class="btn btn-secondary" id="viewPitchBtn" style="width:100%; margin-bottom:4px;">🏟️ Ver formación</button>
 
           <div class="match-confirm-box">
             <div class="form-group">
@@ -193,7 +198,7 @@
 
           <div class="teams-container" style="margin-top:16px;">
             <div class="team">
-              <h3 class="team-title" style="color: #10b981;">● Equipo A</h3>
+              <h3 class="team-title" style="color: #f97316;">● Equipo A</h3>
               <div class="team-list" id="resultTeamA"></div>
             </div>
             <div class="team">
