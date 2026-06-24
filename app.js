@@ -1628,6 +1628,11 @@ function backToSelection() {
   currentTeams = null;
   currentMatchDetails = null;
   selectedPlaceData = null;
+
+  const manualSelector = document.getElementById("manualTeamSelection");
+  const genManualBtn = document.getElementById("generateManualBtn");
+  if (manualSelector) manualSelector.classList.add("hidden");
+  if (genManualBtn) genManualBtn.style.display = "";
 }
 
 function backToMatchSetup() {
