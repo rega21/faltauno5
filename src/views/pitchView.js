@@ -80,6 +80,26 @@
     `;
   }
 
+  function applySpreadAnimation(container) {
+    const field = container.querySelector(".pitch-field");
+    if (!field) return;
+    const fieldRect = field.getBoundingClientRect();
+    const centerX = fieldRect.left + fieldRect.width / 2;
+    const centerY = fieldRect.top + fieldRect.height / 2;
+
+    const players = container.querySelectorAll(".pitch-player");
+    players.forEach((el, i) => {
+      const rect = el.getBoundingClientRect();
+      const playerCX = rect.left + rect.width / 2;
+      const playerCY = rect.top + rect.height / 2;
+      const dx = centerX - playerCX;
+      const dy = centerY - playerCY;
+      el.style.setProperty("--enter-from", `translate(${dx}px, ${dy}px)`);
+      el.style.setProperty("--enter-delay", `${i * 60}ms`);
+      el.classList.add("pitch-player--entering");
+    });
+  }
+
   function buildHalfRows(players, formation, half, team) {
     const rows = sortPlayersIntoRows(players, formation, team);
     if (half === "top") {
@@ -152,17 +172,24 @@
   }
 
   let pitchSwapSelection = null;
+  let shouldAnimate = true;
 
   function renderInline(containerId, teams, format, onSwap) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    const isVisible = container.offsetParent !== null;
+    const animate = shouldAnimate && isVisible;
+    if (animate) shouldAnimate = false;
+
     const formation = FORMATIONS[format] || FORMATIONS.f5;
     const teamARows = buildHalfRows(teams.a || [], formation, "top", "a");
     const teamBRows = buildHalfRows(teams.b || [], formation, "bottom", "b");
 
+    const cls = "pitch-field" + (onSwap ? " pitch-field--swappable" : "") + (animate ? " pitch-field--animate" : "");
+
     container.innerHTML = `
-      <div class="pitch-field${onSwap ? " pitch-field--swappable" : ""}">
+      <div class="${cls}">
         <div class="pitch-markings">
           <div class="pitch-area pitch-area--top"></div>
           <div class="pitch-goal pitch-goal--top"></div>
@@ -181,6 +208,7 @@
       </div>
     `;
 
+    if (animate) requestAnimationFrame(() => requestAnimationFrame(() => applySpreadAnimation(container)));
     if (onSwap) setupPitchSwap(container, teams, format, onSwap);
   }
 
@@ -301,6 +329,7 @@
   function resetManualOrder() {
     manualOrder.a = null;
     manualOrder.b = null;
+    shouldAnimate = true;
   }
 
   window.PitchView = { openBoth, close, renderInline, resetManualOrder };

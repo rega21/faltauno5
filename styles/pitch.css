@@ -254,6 +254,22 @@
   border-radius: 3px;
 }
 
+/* Entry animation — players spread from center */
+.pitch-field--animate .pitch-player {
+  opacity: 0;
+}
+
+.pitch-field--animate .pitch-player.pitch-player--entering {
+  opacity: 1;
+  animation: pitch-player-spread 1s ease-out forwards;
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+@keyframes pitch-player-spread {
+  0% { transform: var(--enter-from); opacity: 0.6; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+
 /* Swap selection — spinning ring */
 .pitch-player.pitch-swap-selected::before {
   content: "";

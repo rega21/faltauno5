@@ -133,6 +133,8 @@
             },
             borderWidth: 0,
             borderRadius: 5,
+            hoverBackgroundColor: isDark ? "#4BC0C0" : "#2a9d8f",
+            hoverBorderWidth: 0,
           },
         ],
       },
@@ -140,6 +142,15 @@
         indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 800,
+          easing: "easeOutQuart",
+          delay: (ctx) => ctx.type === "data" ? ctx.dataIndex * 60 : 0,
+        },
+        onHover: (event, elements) => {
+          const el = event.native?.target;
+          if (el) el.style.cursor = elements.length ? "pointer" : "default";
+        },
         plugins: {
           legend: { display: false },
           tooltip: { enabled: false },
