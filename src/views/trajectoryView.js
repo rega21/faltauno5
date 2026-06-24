@@ -44,6 +44,7 @@
       keys: sorted.map(([key]) => key),
       labels: sorted.map(([, name]) => name),
       values: sorted.map(([,, v]) => v),
+      photos: sorted.map(([key]) => playersById.get(String(key))?.photo_url || ""),
     };
   }
 
@@ -182,7 +183,8 @@
       const idx = points[0].index;
       const displayName = result.labels[idx];
       const playerKey = result.keys[idx];
-      window.TrajectoryModal?.openPlayerStats(playerKey, displayName, idx === 0 && isUniqueleader);
+      const photoUrl = result.photos[idx] || "";
+      window.TrajectoryModal?.openPlayerStats(playerKey, displayName, idx === 0 && isUniqueleader, photoUrl);
     };
   }
 

@@ -26,9 +26,19 @@
     return { matchesPlayed, won, lost, drawn, winRate };
   }
 
-  async function openPlayerStats(playerKey, displayName, isLeader = false) {
+  async function openPlayerStats(playerKey, displayName, isLeader = false, photoUrl = "") {
     const modal = document.getElementById("playerStatsModal");
     if (!modal) return;
+
+    const avatarEl = document.getElementById("playerStatsAvatar");
+    if (avatarEl) {
+      if (photoUrl) {
+        avatarEl.innerHTML = `<img src="${photoUrl}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      } else {
+        const initial = (displayName || "?").charAt(0).toUpperCase();
+        avatarEl.innerHTML = `<span class="pstats-avatar-initials">${initial}</span>`;
+      }
+    }
 
     document.getElementById("playerStatsName").textContent = isLeader ? "★ " + displayName : displayName;
     document.getElementById("pstatsPlayed").textContent = "—";
