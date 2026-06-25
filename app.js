@@ -1614,6 +1614,7 @@ function showMatchSetup() {
 
   void initLocationAutocomplete();
   void initLocationRecentSuggestions();
+  void initPitchLocationAutocomplete();
 }
 
 function showMatchResults() {
@@ -1642,7 +1643,7 @@ function backToMatchSetup() {
 function getDefaultDateTimeLocal() {
   const date = new Date();
   const pad = (value) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T20:00`;
 }
 
 function setMatchLocationHint(message = "") {
@@ -1966,8 +1967,71 @@ function initLegacyAutocomplete(locationInput) {
   });
 }
 
+let pitchAutocompleteReady = false;
+
+async function initPitchLocationAutocomplete() {
+  const pitchInput = document.getElementById("pitchLocationInput");
+  const mainInput = document.getElementById("matchLocation");
+  if (!pitchInput || pitchAutocompleteReady) return;
+
+  if (!GOOGLE_MAPS_API_KEY) return;
+
+  try {
+    await loadGoogleMapsPlacesScript();
+  } catch (_) {
+    return;
+  }
+
+  if (!window.google?.maps?.places?.Autocomplete) return;
+
+  pitchAutocompleteReady = true;
+  const ac = new window.google.maps.places.Autocomplete(pitchInput, {
+    types: ["establishment"],
+    componentRestrictions: { country: "uy" },
+  });
+
+  if (typeof ac.setFields === "function") {
+    ac.setFields(["place_id", "formatted_address", "name", "geometry", "types"]);
+  }
+
+  ac.addListener("place_changed", () => {
+    const place = ac.getPlace();
+    if (!place) return;
+
+    const name = place.name || pitchInput.value.trim();
+    const address = place.formatted_address || "";
+    const lat = place.geometry?.location?.lat ? place.geometry.location.lat() : null;
+    const lng = place.geometry?.location?.lng ? place.geometry.location.lng() : null;
+    const placeId = place.place_id || "";
+    const query = name || address;
+    const mapsUrl = placeId
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query || "Cancha")}&query_place_id=${encodeURIComponent(placeId)}`
+      : buildMapsSearchUrl(query, address);
+
+    pitchInput.value = name;
+    if (mainInput) mainInput.value = name;
+
+    selectedPlaceData = { location: name, address, placeId, mapsUrl, latitude: lat, longitude: lng };
+    setDetectedAddressDetails(address, mapsUrl);
+  });
+
+  pitchInput.addEventListener("input", () => {
+    if (mainInput) mainInput.value = pitchInput.value;
+    if (selectedPlaceData && (pitchInput.value || "").trim() !== (selectedPlaceData.location || "").trim()) {
+      selectedPlaceData = null;
+      setDetectedAddressDetails("", "");
+    }
+  });
+}
+
 async function confirmMatchInfo() {
   if (!currentTeams) return;
+
+  const pitchLoc = document.getElementById("pitchLocationInput");
+  const mainLoc = document.getElementById("matchLocation");
+  if (pitchLoc && mainLoc && pitchLoc.value.trim()) {
+    mainLoc.value = pitchLoc.value;
+  }
 
   const setupValues = window.MatchView?.getMatchSetupValues
     ? window.MatchView.getMatchSetupValues()
@@ -3516,7 +3580,9 @@ document.getElementById("recordMatchBtn")?.addEventListener("click", recordMatch
 document.getElementById("backToSelectionBtn")?.addEventListener("click", backToSelection);
 document.getElementById("backToSetupBtn")?.addEventListener("click", backToMatchSetup);
 document.getElementById("confirmMatchInfoBtn")?.addEventListener("click", confirmMatchInfo);
+document.getElementById("pitchConfirmBtn")?.addEventListener("click", confirmMatchInfo);
 document.getElementById("openMapsBtn")?.addEventListener("click", openDetectedLocationInMaps);
+document.getElementById("pitchMapsBtn")?.addEventListener("click", openDetectedLocationInMaps);
 document.getElementById("copyToWhatsAppBtn")?.addEventListener("click", copyToWhatsApp);
 document.getElementById("copyShareMessageBtn")?.addEventListener("click", copyShareMessage);
 // Balanced teams

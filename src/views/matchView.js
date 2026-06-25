@@ -125,6 +125,14 @@
       mapsBtn.dataset.mapsUrl = trimmedMapsUrl;
       mapsBtn.disabled = !trimmedMapsUrl && !locationValue;
     }
+
+    const pitchMapsBtn = document.getElementById("pitchMapsBtn");
+    if (pitchMapsBtn) {
+      pitchMapsBtn.dataset.mapsUrl = trimmedMapsUrl;
+      const pitchLoc = document.getElementById("pitchLocationInput");
+      const pitchValue = String(pitchLoc?.value || locationValue || "").trim();
+      pitchMapsBtn.disabled = !trimmedMapsUrl && !pitchValue;
+    }
   }
 
   function buildMapsSearchUrl(location = "", address = "") {
@@ -393,13 +401,27 @@
 
     const inlinePitch = document.getElementById("inlinePitch");
     const teamsContainer = document.getElementById("teamsContainer");
+    const pitchInfoBar = document.getElementById("pitchInfoBar");
+    const pitchMapsBtn = document.getElementById("pitchMapsBtn");
+    const pitchConfirmBtn = document.getElementById("pitchConfirmBtn");
+    const matchConfirmBox = document.querySelector(".match-confirm-box");
     const toggle = document.getElementById("matchViewToggle");
     if (!toggle) return;
 
+    function applyView(view) {
+      const isPitch = view === "pitch";
+      if (inlinePitch) inlinePitch.classList.toggle("hidden", !isPitch);
+      if (pitchInfoBar) pitchInfoBar.classList.toggle("hidden", !isPitch);
+      if (pitchMapsBtn) pitchMapsBtn.classList.toggle("hidden", !isPitch);
+      if (pitchConfirmBtn) pitchConfirmBtn.classList.toggle("hidden", !isPitch);
+      if (teamsContainer) teamsContainer.classList.toggle("hidden", isPitch);
+      if (matchConfirmBox) matchConfirmBox.style.display = isPitch ? "none" : "";
+      if (isPitch) syncPitchInputs();
+    }
+
     const btns = toggle.querySelectorAll(".seg-btn");
     const activeView = toggle.querySelector(".seg-btn.active")?.dataset.view || "pitch";
-    if (inlinePitch) inlinePitch.classList.toggle("hidden", activeView !== "pitch");
-    if (teamsContainer) teamsContainer.classList.toggle("hidden", activeView !== "lists");
+    applyView(activeView);
 
     if (matchViewToggleAttached) return;
     matchViewToggleAttached = true;
@@ -408,11 +430,13 @@
       btn.addEventListener("click", () => {
         btns.forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-        const view = btn.dataset.view;
-        if (inlinePitch) inlinePitch.classList.toggle("hidden", view !== "pitch");
-        if (teamsContainer) teamsContainer.classList.toggle("hidden", view !== "lists");
+        if (btn.dataset.view === "lists") syncListsFromPitch();
+        applyView(btn.dataset.view);
       });
     });
+
+    const pitchLocInput = document.getElementById("pitchLocationInput");
+    if (pitchLocInput) pitchLocInput.addEventListener("input", syncMainFromPitchLocation);
   }
 
   const FAVORITE_REASONS = [
@@ -536,6 +560,69 @@
         fp.calendarContainer.appendChild(btn);
       },
     });
+  }
+
+  let pitchFpInstance = null;
+
+  function syncPitchInputs() {
+    const pitchLoc = document.getElementById("pitchLocationInput");
+    const pitchDate = document.getElementById("pitchDateInput");
+    const mainLoc = document.getElementById("matchLocation");
+    const mainDate = document.getElementById("matchDatetime");
+
+    if (pitchLoc && mainLoc) pitchLoc.value = mainLoc.value || "";
+    if (pitchDate && mainDate) {
+      const raw = mainDate.value || "";
+      if (raw) {
+        const d = new Date(raw);
+        const pad = (v) => String(v).padStart(2, "0");
+        pitchDate.value = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } else {
+        pitchDate.value = "";
+      }
+    }
+
+    if (!pitchFpInstance && pitchDate && typeof flatpickr !== "undefined") {
+      pitchFpInstance = flatpickr(pitchDate, {
+        enableTime: true,
+        dateFormat: "Y-m-d\\TH:i",
+        altInput: true,
+        altFormat: "d/m/Y H:i",
+        time_24hr: true,
+        locale: "es",
+        disableMobile: false,
+        position: "auto center",
+        monthSelectorType: "static",
+        defaultDate: mainDate?.value || null,
+        onChange(selectedDates) {
+          if (selectedDates[0] && mainDate) {
+            const d = selectedDates[0];
+            const pad = (v) => String(v).padStart(2, "0");
+            mainDate.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            if (fpInstance) fpInstance.setDate(mainDate.value, false);
+          }
+        },
+        onReady(_sel, _val, fp) {
+          if (!fp.calendarContainer) return;
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = "Listo";
+          btn.className = "fp-listo-btn";
+          btn.addEventListener("click", () => fp.close());
+          fp.calendarContainer.appendChild(btn);
+        },
+      });
+    }
+  }
+
+  function syncListsFromPitch() {
+    syncMainFromPitchLocation();
+  }
+
+  function syncMainFromPitchLocation() {
+    const pitchLoc = document.getElementById("pitchLocationInput");
+    const mainLoc = document.getElementById("matchLocation");
+    if (pitchLoc && mainLoc) mainLoc.value = pitchLoc.value;
   }
 
   global.MatchView = {
