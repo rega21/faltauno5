@@ -56,6 +56,7 @@
       defense: toNumber(row.defense),
       midfield: toNumber(row.midfield),
       photo_url: row.photo_url || null,
+      linked_user_id: row.linked_user_id || null,
       created_at: row.created_at || null,
     };
   }
@@ -196,7 +197,7 @@
       }
 
       const groupFilter = activeGroupId ? `&group_id=eq.${encodeURIComponent(activeGroupId)}` : "";
-      const rows = await requestSupabase(`/rest/v1/players?select=id,name,nickname,attack,defense,midfield,photo_url,created_at&order=name.asc${groupFilter}`, {
+      const rows = await requestSupabase(`/rest/v1/players?select=id,name,nickname,attack,defense,midfield,photo_url,linked_user_id,created_at&order=name.asc${groupFilter}`, {
         method: "GET",
         headers: buildSupabaseHeaders(),
       });
@@ -236,6 +237,7 @@
 
       const payload = buildPlayerPayload(body);
       if (body.photo_url !== undefined) payload.photo_url = body.photo_url;
+      if (body.linked_user_id !== undefined) payload.linked_user_id = body.linked_user_id;
       const groupFilter = activeGroupId ? `&group_id=eq.${encodeURIComponent(activeGroupId)}` : "";
       const rows = await requestSupabase(`/rest/v1/players?id=eq.${encodeURIComponent(String(id))}${groupFilter}`, {
         method: "PATCH",
@@ -254,6 +256,14 @@
 
       const updated = Array.isArray(rows) ? rows[0] : rows;
       return mapPlayerFromSupabase(updated || { id, ...payload });
+    },
+    async linkPlayerToUser(playerId, userId) {
+      const groupFilter = activeGroupId ? `&group_id=eq.${encodeURIComponent(activeGroupId)}` : "";
+      return requestSupabase(`/rest/v1/players?id=eq.${encodeURIComponent(String(playerId))}${groupFilter}`, {
+        method: "PATCH",
+        headers: buildSupabaseHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+        body: JSON.stringify({ linked_user_id: userId }),
+      });
     },
     async deletePlayer(id) {
       if (!HAS_SUPABASE) {

@@ -863,6 +863,11 @@ let currentIdentityPlayerId = null;
 function openIdentityModal(playerId) {
   const player = players.find((p) => String(p.id) === String(playerId));
   if (!player) return;
+  const isAdmin = adminAuthenticated ||
+    (currentUser?.id && currentUser.id === activeGroupCreatedBy) ||
+    currentUserMembership?.role === "admin";
+  const isLinkedToOther = player.linked_user_id && player.linked_user_id !== currentUser?.id;
+  if (isLinkedToOther && !isAdmin) return;
   currentIdentityPlayerId = playerId;
   playerAvatarController.initAvatar(player, "identityAvatarPreview", "identityAvatarPlaceholder", "identityAvatarInput");
   const modal = document.getElementById("identityModal");
@@ -872,11 +877,8 @@ function openIdentityModal(playerId) {
   if (title) title.textContent = `Editar ${player.name}`;
   if (nameInput) nameInput.value = player.name || "";
   if (nicknameInput) nicknameInput.value = player.nickname || "";
-  const canDelete = adminAuthenticated ||
-    (currentUser?.id && currentUser.id === activeGroupCreatedBy) ||
-    currentUserMembership?.role === "admin";
   const deleteBtn = document.getElementById("deleteFromIdentityBtn");
-  if (deleteBtn) deleteBtn.classList.toggle("hidden", !canDelete);
+  if (deleteBtn) deleteBtn.classList.toggle("hidden", !isAdmin);
   modal?.classList.remove("hidden");
 }
 
@@ -889,6 +891,11 @@ async function saveIdentity() {
   if (!currentIdentityPlayerId) return;
   const player = players.find((p) => String(p.id) === String(currentIdentityPlayerId));
   if (!player) return;
+  const isAdmin = adminAuthenticated ||
+    (currentUser?.id && currentUser.id === activeGroupCreatedBy) ||
+    currentUserMembership?.role === "admin";
+  const isLinkedToOther = player.linked_user_id && player.linked_user_id !== currentUser?.id;
+  if (isLinkedToOther && !isAdmin) return;
   const name = document.getElementById("identityName").value.trim();
   const nickname = document.getElementById("identityNickname").value.trim();
   if (!name) { alert("El nombre no puede estar vacío"); return; }
@@ -1072,6 +1079,174 @@ function renderAdminPlayers() {
 }
 
 /* API calls */
+function getLinkSkippedKey() {
+  return `fobal5_link_skipped_${apiClient.getGroupId?.() || ""}`;
+}
+
+function showLinkedPlayerScreen(modal, player) {
+  const display = player.nickname || player.name;
+  const avatarHtml = player.photo_url
+    ? `<img src="${player.photo_url}" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #22c55e;">`
+    : `<div style="width:100px;height:100px;border-radius:50%;background:#2d3748;border:3px solid #22c55e;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:2rem;color:#fff;">${display[0].toUpperCase()}</div>`;
+  modal.querySelector(".modal-body").innerHTML = `
+    <div style="text-align:center;padding:12px 0 8px;display:flex;flex-direction:column;align-items:center;gap:12px;">
+      ${avatarHtml}
+      <p style="margin:0;font-size:1.1rem;font-weight:700;">Tu jugador es <span style="color:#22c55e;">${display}</span></p>
+      <p style="margin:0;font-size:0.8rem;color:var(--text-secondary);">Tu cuenta está vinculada a este jugador.</p>
+    </div>`;
+  document.getElementById("linkPlayerFooter").innerHTML = `
+    <button class="btn" id="linkPlayerUnlinkBtn" style="flex:1;background:transparent;border:1px solid #ef4444;color:#ef4444;">Desvincular</button>
+    <button class="btn" id="linkPlayerCloseLinkedBtn" style="flex:1;background:transparent;border:1px solid var(--border);color:var(--text-secondary);">Cerrar</button>`;
+
+  document.getElementById("linkPlayerCloseLinkedBtn").onclick = () => modal.classList.add("hidden");
+  document.getElementById("linkPlayerUnlinkBtn").onclick = async () => {
+    const btn = document.getElementById("linkPlayerUnlinkBtn");
+    btn.disabled = true;
+    btn.textContent = "Desvinculando...";
+    try {
+      await apiClient.linkPlayerToUser(player.id, null);
+      player.linked_user_id = null;
+      modal.classList.add("hidden");
+      renderPlayers();
+      showToast(`Desvinculado de ${display}`, "success");
+    } catch (_) {
+      showToast("Error al desvincular", "error");
+      btn.disabled = false;
+      btn.textContent = "Desvincular";
+    }
+  };
+}
+
+function openLinkPlayerModal() {
+  const modal = document.getElementById("linkPlayerModal");
+  if (!modal) return;
+
+  // Si el usuario ya tiene un jugador vinculado, mostrar pantalla de desvincular
+  const myPlayer = players.find((p) => p.linked_user_id === currentUser?.id);
+  if (myPlayer) {
+    showLinkedPlayerScreen(modal, myPlayer);
+    modal.classList.remove("hidden");
+      return;
+  }
+
+  // Restaurar estructura original del modal
+  modal.querySelector(".modal-body").innerHTML = `
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;">Vinculá tu cuenta con tu jugador para poder editar tu nombre, apodo y foto.</p>
+    <div id="linkPlayerList" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;"></div>`;
+  document.getElementById("linkPlayerFooter").innerHTML = `
+    <button class="btn" id="linkPlayerSkipBtn" style="flex:1;background:transparent;border:1px solid var(--border);color:var(--text-secondary);">Ahora no</button>
+    <button class="btn btn-success" id="linkPlayerConfirmBtn" style="flex:1;" disabled>Vincular</button>`;
+
+  const list = document.getElementById("linkPlayerList");
+  const confirmBtn = document.getElementById("linkPlayerConfirmBtn");
+
+  const sortedPlayers = [...players].sort((a, b) => {
+    const aFree = !a.linked_user_id ? 0 : 1;
+    const bFree = !b.linked_user_id ? 0 : 1;
+    return aFree - bFree;
+  });
+  if (!sortedPlayers.length) return;
+
+  const lockIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;opacity:0.4;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+
+  let selectedId = null;
+  list.innerHTML = sortedPlayers.map((p) => {
+    const display = p.nickname || p.name;
+    const isLinked = !!p.linked_user_id;
+    const avatar = p.photo_url
+      ? `<img src="${p.photo_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;${isLinked ? "opacity:0.4;" : ""}">`
+      : `<div style="width:36px;height:36px;border-radius:50%;background:#2d3748;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;color:#fff;${isLinked ? "opacity:0.4;" : ""}">${display[0].toUpperCase()}</div>`;
+    if (isLinked) {
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:transparent;opacity:0.5;cursor:not-allowed;">
+        ${avatar}
+        <span style="font-weight:600;">${display}</span>
+        ${lockIcon}
+      </div>`;
+    }
+    return `<button class="link-player-item" data-id="${p.id}" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:transparent;cursor:pointer;text-align:left;width:100%;color:var(--text-primary);">
+      ${avatar}
+      <span style="font-weight:600;">${display}</span>
+    </button>`;
+  }).join("");
+
+  list.querySelectorAll(".link-player-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      list.querySelectorAll(".link-player-item").forEach((b) => {
+        b.style.borderColor = "var(--border)";
+        b.style.background = "transparent";
+        b.querySelector(".link-check")?.remove();
+      });
+      btn.style.borderColor = "#22c55e";
+      btn.style.background = "rgba(34,197,94,0.1)";
+      const check = document.createElement("span");
+      check.className = "link-check";
+      check.textContent = "✓";
+      check.style.cssText = "margin-left:auto;color:#22c55e;font-weight:700;font-size:1rem;";
+      btn.appendChild(check);
+      selectedId = btn.dataset.id;
+      confirmBtn.disabled = false;
+    });
+  });
+
+  confirmBtn.onclick = () => {
+    if (!selectedId) return;
+    const p = players.find((pl) => String(pl.id) === String(selectedId));
+    if (!p) return;
+    const displayName = p.nickname || p.name;
+
+    // Mostrar pantalla de confirmación dentro del mismo modal
+    const body = modal.querySelector(".modal-body");
+    const footer = document.getElementById("linkPlayerFooter");
+    const avatarHtml = p.photo_url
+      ? `<img src="${p.photo_url}" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid #22c55e;">`
+      : `<div style="width:120px;height:120px;border-radius:50%;background:#2d3748;border:3px solid #22c55e;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:2.2rem;color:#fff;">${displayName[0].toUpperCase()}</div>`;
+    body.innerHTML = `
+      <div style="text-align:center;padding:16px 0 8px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+        ${avatarHtml}
+        <p style="margin:0;font-size:1.4rem;font-weight:700;">¿Sos <span style="color:#22c55e;">${displayName}</span>?</p>
+        <p style="margin:0;font-size:0.85rem;color:var(--text-secondary);">Tu cuenta quedará vinculada a este jugador.</p>
+      </div>`;
+    footer.innerHTML = `
+      <button class="btn" id="linkPlayerBackBtn" style="flex:1;background:transparent;border:1px solid var(--border);color:var(--text-secondary);">Ahora no</button>
+      <button class="btn btn-success" id="linkPlayerDoConfirmBtn" style="flex:1;">Vincular</button>`;
+
+    document.getElementById("linkPlayerBackBtn").onclick = () => openLinkPlayerModal();
+
+    document.getElementById("linkPlayerDoConfirmBtn").onclick = async () => {
+      const doBtn = document.getElementById("linkPlayerDoConfirmBtn");
+      doBtn.disabled = true;
+      doBtn.textContent = "Vinculando...";
+      try {
+        await apiClient.linkPlayerToUser(selectedId, currentUser.id);
+        if (p) p.linked_user_id = currentUser.id;
+        modal.classList.add("hidden");
+        renderPlayers();
+        showToast(`Vinculado a ${displayName}`, "success");
+      } catch (_) {
+        showToast("Error al vincular jugador", "error");
+        openLinkPlayerModal();
+      }
+    };
+  };
+
+  document.getElementById("linkPlayerSkipBtn").onclick = () => {
+    try { localStorage.setItem(getLinkSkippedKey(), "1"); } catch (_) {}
+    modal.classList.add("hidden");
+  };
+
+  modal.classList.remove("hidden");
+}
+
+function checkAndShowLinkModal() {
+  if (!currentUser) return;
+  const alreadyLinked = players.some((p) => p.linked_user_id === currentUser.id);
+  if (alreadyLinked) return;
+  try { if (localStorage.getItem(getLinkSkippedKey())) return; } catch (_) {}
+  const unlinked = players.filter((p) => !p.linked_user_id);
+  if (!unlinked.length) return;
+  openLinkPlayerModal();
+}
+
 async function fetchPlayers() {
   if (adminPlayersController) {
     await adminPlayersController.fetchPlayers();
@@ -1094,6 +1269,7 @@ async function fetchPlayers() {
   const hydrated = await voterTrackingService?.hydrateVotedPlayersFromServer();
   if (!hydrated) await voterTrackingService?.reconcileLocalVotesWithServer();
   renderPlayers();
+  checkAndShowLinkModal();
 }
 
 async function fetchMatches() {
@@ -1230,9 +1406,10 @@ function renderPlayers(options = {}) {
   preservePlayersOrderOnNextRender = false;
   const playersForView = getPlayersForDisplay(players);
 
-  const canDelete = adminAuthenticated ||
+  const isAdminUser = adminAuthenticated ||
     (currentUser?.id && currentUser.id === activeGroupCreatedBy) ||
     currentUserMembership?.role === "admin";
+  const canDelete = isAdminUser;
 
   // Mostrar "Rating Global" solo si hay jugadores con rating validado en el grupo activo
   updateMenuItemsState();
@@ -1243,6 +1420,8 @@ function renderPlayers(options = {}) {
       playerSearchTerm,
       adminAuthenticated,
       canDelete,
+      currentUserId: currentUser?.id || null,
+      isAdminUser,
       onEdit: (id) => editPlayer(id),
       onDelete: (id) => showDeleteConfirm(id),
       onRatingClick: (id) => openRatingDetailsByPlayerId(id),
@@ -2835,7 +3014,7 @@ function renderVoteActivity(rows = []) {
           <span class="vote-activity-name">${escapeHtml(name)}</span>
           <span class="vote-activity-time muted">${escapeHtml(timeAgo)}</span>
         </div>
-        <span class="vote-activity-scores">Atk ${Number(row.attack)} · Vis ${Number(row.midfield)} · Def ${Number(row.defense)} · Fis ${Number(row.stamina)} · Gar ${Number(row.garra)} · Tec ${Number(row.technique)}</span>
+        <span class="vote-activity-scores">Atk ${Number(row.attack)} · Vel ${Number(row.midfield)} · Def ${Number(row.defense)} · Fis ${Number(row.stamina)} · Gar ${Number(row.garra)} · Tec ${Number(row.technique)}</span>
       </div>
     `;
   }).join("");
@@ -3203,7 +3382,6 @@ const ICON_STAR_OUTLINE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" he
 
 let activeGroupLogoUrl = null;
 let activeGroupName = null;
-let activeGroupPin = "";
 let activeGroupCreatedBy = null;
 let activeGroupAllowMemberEdit = false;
 
@@ -3242,6 +3420,10 @@ updateBrandLogo();
 document.getElementById("globalRatingBtn")?.addEventListener("click", () => {
   const firstPlayer = getPlayersForDisplay(players).find((p) => p.communityStatus === "validated");
   if (firstPlayer) openRatingDetailsByPlayerId(firstPlayer.id);
+});
+document.getElementById("myPlayerBtn")?.addEventListener("click", () => {
+  closeTopbarMenu();
+  openLinkPlayerModal();
 });
 document.getElementById("infoAppBtn")?.addEventListener("click", openInfoApp);
 document.getElementById("signOutBtn")?.addEventListener("click", async () => {
@@ -3979,13 +4161,6 @@ let currentUserMembership = null;
 let _authReadyResolve;
 const authReadyPromise = new Promise((resolve) => { _authReadyResolve = resolve; });
 
-async function hashPin(pin) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pin.toUpperCase().trim());
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 function saveGroupToStorage(group) {
   const data = JSON.stringify({ id: group.id, slug: group.slug, name: group.name });
   try { localStorage.setItem(GROUP_STORAGE_KEY, data); } catch (_) {}
@@ -4010,52 +4185,6 @@ function loadGroupFromStorage() {
     if (match) return JSON.parse(decodeURIComponent(match[1]));
   } catch (_) {}
   return null;
-}
-
-function showPinOverlay(group, onSuccess, onBack) {
-  const overlay = document.getElementById("groupPinOverlay");
-  const title = document.getElementById("groupPinTitle");
-  const input = document.getElementById("groupPinInput");
-  const confirmBtn = document.getElementById("groupPinConfirmBtn");
-  const backBtn = document.getElementById("groupPinBackBtn");
-  const errorMsg = document.getElementById("groupPinError");
-  if (!overlay) return;
-
-  title.textContent = group.name;
-  input.value = "";
-  errorMsg.classList.add("hidden");
-  const logoEl = document.getElementById("groupPinLogo");
-  if (logoEl) {
-    logoEl.innerHTML = group.logo_url
-      ? `<img src="${group.logo_url}" alt="${group.name}" style="width:100%;height:100%;object-fit:cover;" />`
-      : `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary,#94a3b8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;
-  }
-  overlay.classList.remove("hidden");
-  setTimeout(() => input.focus(), 100);
-
-  async function attemptPin() {
-    const hash = await hashPin(input.value);
-    if (hash === group.pin_hash) {
-      activeGroupPin = input.value;
-      try { sessionStorage.setItem("fobal5_group_pin", input.value); } catch (_) {}
-      overlay.classList.add("hidden");
-      saveGroupToStorage(group);
-      onSuccess();
-    } else {
-      errorMsg.classList.remove("hidden");
-      input.value = "";
-      input.focus();
-    }
-  }
-
-  confirmBtn.onclick = attemptPin;
-  input.onkeydown = (e) => { if (e.key === "Enter") attemptPin(); };
-  if (backBtn) {
-    backBtn.onclick = () => {
-      overlay.classList.add("hidden");
-      if (onBack) onBack();
-    };
-  }
 }
 
 (async function init() {

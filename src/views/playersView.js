@@ -73,6 +73,8 @@
     playerSearchTerm,
     adminAuthenticated,
     canDelete,
+    currentUserId = null,
+    isAdminUser = false,
     onEdit,
     onDelete,
     onRatingClick,
@@ -152,12 +154,21 @@
           ? `<img class="player-card-avatar" src="${escapeHtml(player.photo_url)}" alt="${escapeHtml(player.name)}">`
           : `<div class="player-card-avatar player-card-avatar--initials">${initials}</div>`;
 
+        const isMyPlayer = currentUserId && player.linked_user_id === currentUserId;
+        const isLinkedToOther = player.linked_user_id && player.linked_user_id !== currentUserId;
+        const canEditIdentity = isAdminUser || !player.linked_user_id || isMyPlayer;
+        const nameClass = canEditIdentity ? "player-name player-name--editable" : "player-name";
+        const nameTitle = canEditIdentity ? "Editar nombre" : "";
+        const pencilIcon = canEditIdentity
+          ? `<svg class="player-edit-icon" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`
+          : `<svg class="player-edit-icon" style="opacity:0.35" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+
         return `
           <article class="card">
             ${avatarMarkup}
             <div class="player-info">
-              <div class="player-name player-name--editable" data-id="${player.id}" title="Editar nombre">
-                ${escapeHtml(player.name)} ${nick}<svg class="player-edit-icon" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+              <div class="${nameClass}" data-id="${player.id}" title="${nameTitle}">
+                ${escapeHtml(player.name)} ${nick}${pencilIcon}
               </div>
               <div class="player-meta">
                 ${statusMarkup}

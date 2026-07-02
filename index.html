@@ -81,6 +81,7 @@
         </button>
         <button class="topbar-menu-item hidden" type="button" id="voteHistoryBtn" role="menuitem" aria-label="Historial de votos">🗳️ Historial de votos</button>
         <button class="topbar-menu-item" type="button" id="globalRatingBtn" role="menuitem" aria-label="Rating global">Rating Global</button>
+        <button class="topbar-menu-item" type="button" id="myPlayerBtn" role="menuitem" aria-label="Mi jugador">Mi jugador</button>
         <button class="topbar-menu-item hidden" type="button" id="feedbackBtn" role="menuitem" aria-label="Sugerencias o mejoras">Sugerencias</button>
         <button class="topbar-menu-item hidden" type="button" id="membersBtn" role="menuitem" aria-label="Miembros del grupo">Miembros <span id="pendingBadge" class="hidden" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:0.75rem;margin-left:4px;"></span></button>
         <button class="topbar-menu-item" type="button" id="changeGroupBtn" role="menuitem" aria-label="Cambiar de grupo">Cambiar de grupo</button>
@@ -533,6 +534,20 @@
       </div>
     </div>
 
+    <!-- Link Player Modal -->
+    <div id="linkPlayerModal" class="modal hidden">
+      <div class="modal-content modal-small modal-dark">
+        <div class="modal-body" style="padding-top:20px;">
+          <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;">Vinculá tu cuenta con tu jugador para poder editar tu nombre, apodo y foto.</p>
+          <div id="linkPlayerList" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;"></div>
+        </div>
+        <div id="linkPlayerFooter" style="display:flex;gap:8px;padding:16px;border-top:1px solid var(--border);">
+          <button class="btn" id="linkPlayerSkipBtn" style="flex:1;background:transparent;border:1px solid var(--border);color:var(--text-secondary);">Ahora no</button>
+          <button class="btn btn-success" id="linkPlayerConfirmBtn" style="flex:1;" disabled>Vincular</button>
+        </div>
+      </div>
+    </div>
+
     <!-- History Result Modal -->
     <div id="historyResultModal" class="modal hidden">
       <div class="modal-content modal-medium">
@@ -641,31 +656,6 @@
     </div>
   </div>
 
-  <!-- Group PIN overlay -->
-  <div id="groupPinOverlay" class="hidden" style="
-    position:absolute;inset:0;min-height:100vh;z-index:10000;
-    background:linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)),url('icons/imgPortada.png') center/cover no-repeat;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:20px;padding:32px;
-  ">
-    <div id="groupPinLogo" style="width:72px;height:72px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;border:2px solid var(--border,#334155);"></div>
-    <h1 id="groupPinTitle" style="margin:0;font-size:1.4rem;color:var(--text-primary,#fff);text-align:center;"></h1>
-    <p style="margin:0;font-size:0.9rem;color:var(--text-secondary,#aaa);">Ingresá el PIN del grupo</p>
-    <input id="groupPinInput" type="password" placeholder="PIN" maxlength="20" style="
-      padding:12px 16px;font-size:1.1rem;border-radius:10px;border:1px solid var(--border,#334155);
-      background:var(--card-bg,#1e293b);color:var(--text-primary,#fff);width:100%;max-width:320px;
-      text-align:center;letter-spacing:4px;
-    " />
-    <p id="groupPinError" class="hidden" style="margin:0;font-size:0.85rem;color:#ef4444;">PIN incorrecto, intentá de nuevo.</p>
-    <button id="groupPinConfirmBtn" style="
-      padding:14px;font-size:1rem;font-weight:700;border-radius:12px;border:none;cursor:pointer;
-      background:#008B8B;color:#fff;width:100%;max-width:320px;
-    ">Ingresar</button>
-    <button id="groupPinBackBtn" style="
-      padding:10px;font-size:0.9rem;border-radius:10px;border:1px solid var(--border,#334155);
-      background:transparent;color:var(--text-secondary,#94a3b8);cursor:pointer;width:100%;max-width:320px;
-    ">← Volver</button>
-  </div>
 
     <!-- Modal nuevo jugador -->
   <div id="newPlayerModal" class="modal hidden">
