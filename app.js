@@ -1131,7 +1131,7 @@ function openLinkPlayerModal() {
 
   // Restaurar estructura original del modal
   modal.querySelector(".modal-body").innerHTML = `
-    <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;">Vinculá tu cuenta con tu jugador para poder editar tu nombre, apodo y foto.</p>
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;">Indicá cuál es tu jugador. Solo vos podrás editar tu nombre, apodo y foto.</p>
     <div id="linkPlayerList" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;"></div>`;
   document.getElementById("linkPlayerFooter").innerHTML = `
     <button class="btn" id="linkPlayerSkipBtn" style="flex:1;background:transparent;border:1px solid var(--border);color:var(--text-secondary);">Ahora no</button>
@@ -1237,6 +1237,13 @@ function openLinkPlayerModal() {
   modal.classList.remove("hidden");
 }
 
+function updateLinkHint() {
+  const btn = document.getElementById("menuToggleBtn");
+  if (!btn || !currentUser) return;
+  const hasLinked = players.some((p) => p.linked_user_id === currentUser.id);
+  btn.classList.toggle("has-link-hint", !hasLinked);
+}
+
 function checkAndShowLinkModal() {
   if (!currentUser) return;
   const alreadyLinked = players.some((p) => p.linked_user_id === currentUser.id);
@@ -1254,6 +1261,7 @@ async function fetchPlayers() {
     const hydrated = await voterTrackingService?.hydrateVotedPlayersFromServer();
     if (!hydrated) await voterTrackingService?.reconcileLocalVotesWithServer();
     renderPlayers();
+    updateLinkHint();
     return;
   }
 
@@ -1269,6 +1277,7 @@ async function fetchPlayers() {
   const hydrated = await voterTrackingService?.hydrateVotedPlayersFromServer();
   if (!hydrated) await voterTrackingService?.reconcileLocalVotesWithServer();
   renderPlayers();
+  updateLinkHint();
   checkAndShowLinkModal();
 }
 

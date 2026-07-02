@@ -855,6 +855,22 @@ input.flatpickr-input[readonly] {
   background: transparent;
 }
 
+/* Dot indicator on hamburger when user has no linked player */
+#menuToggleBtn.has-link-hint::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1.5px solid var(--topbar-bg, #1e293b);
+}
+#menuToggleBtn {
+  position: relative;
+}
+
 /* Link player modal */
 .link-player-item:hover {
   background: rgba(255, 255, 255, 0.05) !important;
