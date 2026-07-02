@@ -1238,10 +1238,10 @@ function openLinkPlayerModal() {
 }
 
 function updateLinkHint() {
-  const btn = document.getElementById("menuToggleBtn");
-  if (!btn || !currentUser) return;
+  if (!currentUser) return;
   const hasLinked = players.some((p) => p.linked_user_id === currentUser.id);
-  btn.classList.toggle("has-link-hint", !hasLinked);
+  document.getElementById("menuToggleBtn")?.classList.toggle("has-link-hint", !hasLinked);
+  document.getElementById("myPlayerBadge")?.classList.toggle("hidden", hasLinked);
 }
 
 function checkAndShowLinkModal() {
