@@ -51,64 +51,7 @@ const GOOGLE_MAPS_API_KEY = window.APP_CONFIG?.GOOGLE_MAPS_API_KEY || "";
 
 const authClient = window.AuthApi || null;
 
-const apiClient = window.FobalApi || {
-  async getPlayers() {
-    const res = await fetch("https://698cdcb221a248a27362c974.mockapi.io/players");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  async createPlayer(body) {
-    const res = await fetch("https://698cdcb221a248a27362c974.mockapi.io/players", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  async updatePlayer(id, body) {
-    const res = await fetch(`https://698cdcb221a248a27362c974.mockapi.io/players/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  async deletePlayer(id) {
-    const res = await fetch(`https://698cdcb221a248a27362c974.mockapi.io/players/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.text();
-  },
-  async getMatches() {
-    const res = await fetch("https://698cdcb221a248a27362c974.mockapi.io/matches");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  async createMatch(body) {
-    const res = await fetch("https://698cdcb221a248a27362c974.mockapi.io/matches", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  async updateMatch(id, body) {
-    const res = await fetch(`https://698cdcb221a248a27362c974.mockapi.io/matches/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  async deleteMatch(id) {
-    const res = await fetch(`https://698cdcb221a248a27362c974.mockapi.io/matches/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.text();
-  },
-};
+const apiClient = window.FobalApi;
 
 const historyController = window.createHistoryController
   ? window.createHistoryController({
@@ -2835,7 +2778,7 @@ async function saveEditPlayer() {
       }
 
       if (!/^([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.test(editPlayerId)) {
-        alert("Este jugador todavía usa ID de MockAPI. Para calificar en comunidad, primero migra players a Supabase (UUID).");
+        alert("No se pudo identificar al jugador (ID inválido).");
         return;
       }
 

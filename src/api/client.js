@@ -1,6 +1,4 @@
 (function (global) {
-  const PLAYERS_URL = "https://698cdcb221a248a27362c974.mockapi.io/players";
-  const MATCHES_URL = "https://698cdcb221a248a27362c974.mockapi.io/matches";
   const SUPABASE_ANON_KEY = global.APP_CONFIG?.SUPABASE_ANON_KEY || "";
 
   function resolveSupabaseBaseUrl() {
@@ -187,15 +185,11 @@
       return activeGroupId;
     },
     urls: {
-      players: HAS_SUPABASE ? `${SUPABASE_BASE_URL}/rest/v1/players` : PLAYERS_URL,
-      matches: HAS_SUPABASE ? `${SUPABASE_BASE_URL}/rest/v1/matches` : MATCHES_URL,
+      players: `${SUPABASE_BASE_URL}/rest/v1/players`,
+      matches: `${SUPABASE_BASE_URL}/rest/v1/matches`,
       supabase: SUPABASE_BASE_URL,
     },
     async getPlayers() {
-      if (!HAS_SUPABASE) {
-        return request(PLAYERS_URL);
-      }
-
       const groupFilter = activeGroupId ? `&group_id=eq.${encodeURIComponent(activeGroupId)}` : "";
       const rows = await requestSupabase(`/rest/v1/players?select=id,name,nickname,attack,defense,midfield,photo_url,linked_user_id,created_at&order=name.asc${groupFilter}`, {
         method: "GET",
@@ -205,14 +199,6 @@
       return (rows || []).map(mapPlayerFromSupabase);
     },
     async createPlayer(body) {
-      if (!HAS_SUPABASE) {
-        return request(PLAYERS_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      }
-
       const payload = { ...buildPlayerPayload(body), ...(activeGroupId ? { group_id: activeGroupId } : {}) };
       const rows = await requestSupabase("/rest/v1/players", {
         method: "POST",
@@ -227,14 +213,6 @@
       return mapPlayerFromSupabase(created || payload);
     },
     async updatePlayer(id, body) {
-      if (!HAS_SUPABASE) {
-        return request(`${PLAYERS_URL}/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      }
-
       const payload = buildPlayerPayload(body);
       if (body.photo_url !== undefined) payload.photo_url = body.photo_url;
       if (body.linked_user_id !== undefined) payload.linked_user_id = body.linked_user_id;
@@ -266,10 +244,6 @@
       });
     },
     async deletePlayer(id) {
-      if (!HAS_SUPABASE) {
-        return request(`${PLAYERS_URL}/${id}`, { method: "DELETE" });
-      }
-
       const groupFilter = activeGroupId ? `&group_id=eq.${encodeURIComponent(activeGroupId)}` : "";
       return requestSupabase(`/rest/v1/players?id=eq.${encodeURIComponent(String(id))}${groupFilter}`, {
         method: "DELETE",
@@ -277,9 +251,6 @@
       });
     },
     async getMatches() {
-      if (!HAS_SUPABASE) {
-        return request(MATCHES_URL);
-      }
       const groupFilter = activeGroupId ? `&group_id=eq.${encodeURIComponent(activeGroupId)}` : "";
       const [matches, matchPlayers] = await Promise.all([
         requestSupabase(`/rest/v1/matches?select=*&order=played_at.desc.nullslast,scheduled_at.desc.nullslast${groupFilter}`, {
@@ -322,13 +293,6 @@
         }));
     },
     async createMatch(body) {
-      if (!HAS_SUPABASE) {
-        return request(MATCHES_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      }
       const payload = { ...mapMatchToSupabase(body), ...(activeGroupId ? { group_id: activeGroupId } : {}) };
       const rows = await requestSupabase("/rest/v1/matches", {
         method: "POST",
@@ -345,13 +309,6 @@
       return mapMatchFromSupabase({ ...created, match_players: [] });
     },
     async updateMatch(id, body) {
-      if (!HAS_SUPABASE) {
-        return request(`${MATCHES_URL}/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      }
       const payload = mapMatchToSupabase(body);
       const groupFilter = activeGroupId ? `&group_id=eq.${encodeURIComponent(activeGroupId)}` : "";
       await requestSupabase(`/rest/v1/matches?id=eq.${encodeURIComponent(String(id))}${groupFilter}`, {
@@ -377,9 +334,6 @@
       return mapMatchFromSupabase({ ...(updated || { id, ...payload }), match_players: matchPlayers || [] });
     },
     async deleteMatch(id) {
-      if (!HAS_SUPABASE) {
-        return request(`${MATCHES_URL}/${id}`, { method: "DELETE" });
-      }
       await requestSupabase(`/rest/v1/match_players?match_id=eq.${encodeURIComponent(String(id))}`, {
         method: "DELETE",
         headers: buildSupabaseHeaders({ Prefer: "return=minimal" }),
