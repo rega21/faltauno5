@@ -22,7 +22,7 @@
       else lost++;
     });
 
-    const winRate = matchesPlayed > 0 ? Math.round((won / matchesPlayed) * 100) : 0;
+    const winRate = matchesPlayed > 0 ? Math.round(((won + drawn * 0.5) / matchesPlayed) * 100) : 0;
     return { matchesPlayed, won, lost, drawn, winRate };
   }
 
