@@ -37,7 +37,7 @@
         return `
           <article class="card card-selectable ${isSelected ? "selected" : ""}" data-id="${playerId}">
             <div class="player-name">
-              ${escapeHtml(player.name)}${hasNickname ? `<span class="player-nick">${escapeHtml(player.nickname.trim())}</span>` : ""}
+              ${escapeHtml(player.name)}${hasNickname ? ` <span class="player-nick">"${escapeHtml(player.nickname.trim())}"</span>` : ""}
             </div>
             <label class="checkbox">
               <input type="checkbox" ${isSelected ? "checked" : ""} ${disabled} data-id="${playerId}">

@@ -101,9 +101,9 @@
 
     playersList.innerHTML = visualPlayers
       .map((player) => {
-        const nick = player.nickname?.trim()
-          ? `<span class="player-nick">"${escapeHtml(player.nickname)}"</span>`
-          : "";
+        const displayName = player.nickname?.trim()
+          ? `"${escapeHtml(player.nickname)}"`
+          : escapeHtml(player.name || "—");
         // Verificar si el usuario ya votó a este jugador
         let votedPlayers = [];
         try {
@@ -168,7 +168,7 @@
             ${avatarMarkup}
             <div class="player-info">
               <div class="${nameClass}" data-id="${player.id}" title="${nameTitle}">
-                ${escapeHtml(player.name)} ${nick}${pencilIcon}
+                ${displayName}${pencilIcon}
               </div>
               <div class="player-meta">
                 ${statusMarkup}

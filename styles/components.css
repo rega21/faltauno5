@@ -283,6 +283,7 @@
   font-weight: 750;
   letter-spacing: 0.2px;
   flex:1;
+  min-width:0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -305,7 +306,7 @@
 .player-nick{
   font-weight: 500;
   color: var(--muted);
-  margin-left: 6px;
+  margin-left: 2px;
 }
 .player-meta{
   display:flex;
